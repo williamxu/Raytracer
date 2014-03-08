@@ -88,7 +88,7 @@ Color	ks = Color(Vector3f(0.0, 0.0, 0.0));
 //int		ss = 0;
 //int		cw = 0;
 //int		toon = 0;
-char*	filename = "";
+char*	filename = "output.bmp";
 
 FIBITMAP* bitmap = FreeImage_Allocate(400, 400, 24);
 RGBQUAD color;
@@ -115,22 +115,31 @@ void setPixel(int x, int y, Color c) {
 	//glVertex2f(x + 0.5, y + 0.5);   // The 0.5 is to target pixel centers 
 }
 
-//void saveFile(){
-//	
-//	FreeImage_SetPixelColor(bitmap, i, j, &color);
-//				
-//	int index = string(filename).find_last_of('.') + 1;
-//	if (FreeImage_Save(FreeImage_GetFIFFromFormat(filename + index), bitmap, filename)) {
-//		cout << "Image saved successfully." << endl;
-//	}
-//	
-//}
+void saveFile(int w, int h){
+	color.rgbRed = 0;
+	color.rgbGreen = 0;
+	color.rgbBlue = 0;
+	for (int i = 0; i < w; i++){
+		for (int j = 0; i < h; i++){
+			FreeImage_SetPixelColor(bitmap, i, j, &color);
+		}
+	}			
+	int index = string(filename).find_last_of('.') + 1;
+	if (FreeImage_Save(FreeImage_GetFIFFromFormat(filename + index), bitmap, filename)) {
+		cout << "Image saved successfully." << endl;
+	}
+	
+}
 
 
 int main(int argc, char *argv[]) {
 	FreeImage_Initialise();
+	for (int i = 1; i < argc; i++){
+		//add parameters
+	}
 	viewport.w = 400;
-	viewport.h = 400;	
+	viewport.h = 400;
+	saveFile(viewport.w, viewport.h);
 	FreeImage_DeInitialise();
 	return 0;
 }
