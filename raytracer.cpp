@@ -324,36 +324,28 @@ public:
 		return true;
 	}
 	bool intersect(Ray& ray, float* thit, LocalGeo* local){
-		float a = p1(0) - p2(0);
-		float b = p1(1) - p2(1);
-		float c = p1(2) - p2(2);
-		float d = p1(0) - p3(0);
-		float e = p1(1) - p3(1);
-		float f = p1(2) - p3(2);
-		float g = ray.direction(0);
-		float h = ray.direction(1);
-		float i = ray.direction(2);
-		float j = p1(0) - ray.point(0);
-		float k = p1(1) - ray.point(1);
-		float l = p1(2) - ray.point(2);
-		float M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
-		float t = (-1) * (f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
-		if (t < ray.t_min || t > ray.t_max){
-			return false;
+		if (intersectP(ray)){
+			float a = p1.x() - p2.x();
+			float b = p1.y() - p2.y();
+			float c = p1.z() - p2.z();
+			float d = p1.x() - p3.x();
+			float e = p1.y() - p3.y();
+			float f = p1.z() - p3.z();
+			float g = ray.direction.x();
+			float h = ray.direction.y();
+			float i = ray.direction.z();
+			float j = p1.x() - ray.point.x();
+			float k = p1.y() - ray.point.y();
+			float l = p1.z() - ray.point.z();
+			float M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
+			float t = -(f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
+			*thit = t;
+			Vector3f p = ray.atTime(t);
+			Vector3f norm = (p2 - p1).cross(p3 - p1);
+			*local = LocalGeo(p, Normal(norm));
+			return true;
 		}
-		float gamma = (i * (a * k - j * b) + h * (j * c - a * l) + g * (b * l - k * c)) / M;
-		if (gamma < 0 || gamma > 1){
-			return false;
-		}
-		float beta = (j * (e * i - h * f) + k * (g * f - d * i) + l * (d * h - e * g)) / M;
-		if (beta < 0 || beta >(1 - gamma)){
-			return false;
-		}
-		*thit = t;
-		Vector3f p = ray.atTime(t);
-		Vector3f norm = (p2 - p1).cross(p3 - p1);
-		*local = LocalGeo(p, Normal(norm));
-		return true;
+		return false;
 	}
 };
 
@@ -543,7 +535,7 @@ public:
 
 class RayTracer{
 public:
-	Triangle triangle;
+	vector<Triangle> triangles;
 	vector<Sphere> spheres;
 
 
@@ -554,12 +546,13 @@ public:
 		spheres.push_back(s);
 	}
 	void addTriangle(Triangle t){
-		triangle = t;
+		triangles.push_back(t);
 	}
 	void trace(Ray& ray, int depth, Color* color) {
 		Color c = Color();
 		float thit = 0;
 		LocalGeo lg = LocalGeo();
+		
 		if (depth <= 0){
 			*color = c; //Make the color black and return
 			return;
@@ -585,14 +578,28 @@ public:
 				}
 			}			
 		}
+		for (unsigned int ti = 0; ti < triangles.size(); ti++){
+			if (triangles[ti].intersect(ray, &thit, &lg)){
+				BRDF b = triangles[ti].brdf;
+				Ray lightray;
+				Color lightColor;
+				c = c + b.ambient();
+				for (unsigned int i = 0; i < pLights.size(); i++){	// loop through all light sources
+					pLights[0].generateLightRay(lg, &lightray, &lightColor);
+					
+					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+				}
+				for (unsigned int i = 0; i < dLights.size(); i++){	// loop through all light sources
+					dLights[i].generateLightRay(lg, &lightray, &lightColor);
+					
+					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+					
+				}
+			}
+		}
 		*color = c;
-
-		//if (!triangle.intersect(ray, &thit, &lg)){
-		//	*color = c;
-		//	return;
-		//}
-		//*color = Color(Vector3f(1.0, 0, 0));
-
 
 		// Handle mirror reflection
 		//if (brdf.kr > 0) {
@@ -728,11 +735,11 @@ void spheretest_viewing_angle2(){
 	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
 
 	//camera and image plane
-	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f eye = Vector3f(0, 0, 0);
 	Vector3f ul = Vector3f(-1, 1, 0);
-	Vector3f ur = Vector3f(1, 1, 1);
-	Vector3f lr = Vector3f(1, -1, 0);
-	Vector3f ll = Vector3f(-1, -1, -1);
+	Vector3f ur = Vector3f(1, 1, -1.3);
+	Vector3f lr = Vector3f(1, -1, -1.3);
+	Vector3f ll = Vector3f(-1, -1, 0);
 
 	//scene initializer
 	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
@@ -811,6 +818,40 @@ void spheretest_with_two_spheres(){
 	dLights.clear();
 }
 
+void triangletest_blue_shading(){
+	//"-pl 200 200 200 0.6 0.6 0.6 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
+
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, 0);
+	Vector3f lr = Vector3f(1, -1, 0);
+	Vector3f ll = Vector3f(-1, -1, 0);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
+
+	//triangles
+	BRDF blue = BRDF(Vector3f(0, 0.2, 0.2), Vector3f(0.21, 1, 1), Vector3f(1, 1, 1), Vector3f(0.0, 0.0, 0.0));
+	Triangle triangle = Triangle(Vector3f(0, 1, -1), Vector3f(1, 0, -1), Vector3f(-1, 0, -1), blue);
+	s.addTriangle(triangle);
+	triangle = Triangle(Vector3f(1, 0, -1), Vector3f(1, 1, -2), Vector3f(0, 1, -1), blue);
+	s.addTriangle(triangle);
+
+	s.addSphere(Sphere(Vector3f(0, -1, -2), 0.5, blue));
+
+	filename = "triangletest_blue_shading.bmp";
+	//render call
+	s.render();
+	pLights.clear();
+	dLights.clear();
+}
+
+
 int main(int argc, char *argv[]) {
 
 	spheretest_yellow_shading();
@@ -818,7 +859,7 @@ int main(int argc, char *argv[]) {
 	spheretest_with_two_spheres();
 	spheretest_viewing_angle1();
 	spheretest_viewing_angle2();
-
+	triangletest_blue_shading();
 	return 0;
 }
 
