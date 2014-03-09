@@ -19,17 +19,25 @@
 using namespace Eigen;
 using namespace std;
 
+class Intersection;
+class Light;
+
+enum LightType { POINTLIGHT, DIRECTIONALLIGHT };
+
 inline float sqr(float x) { return x*x; }
+
+
 //****************************************************
 // Global Variables
 //****************************************************
-
+vector<Light>	pLights;
+vector<Light>	dLights;
+float specularCoefficient = 16; //0
 
 //****************************************************
 // Some Classes
 //****************************************************
 
-class Intersection;
 
 class Normal {
 public:
@@ -73,6 +81,23 @@ public:
 
 };
 
+class LocalGeo{
+	//	Store the local geometry at the intersection point.May need to store
+	//		other quantities(eg.texture coordinate) in a more complicated
+	//		raytracer.
+public:
+	Vector3f position;
+	Normal normal;
+	LocalGeo(){
+		position = Vector3f(0, 0, 0);
+		normal = Normal();
+	}
+	LocalGeo(Vector3f p, Normal n){
+		position = p;
+		normal = n;
+	}
+
+};
 //Matrix
 
 //Notes :
@@ -126,56 +151,70 @@ public:
 
 };
 
-//class Light{
-
-//public:
-////	Vector3f location;
-////	Vector3f direction;
-//	Color color;
-//	//Light(int s, Vector3f l, Color c){
-////		if (s == 0)	{
-////			location = l;
-////		}
-////		direction = -l.normalized();
-////		color = c;
-////	}
-////	Vector3f dVector(Vector3f v){
-////		if (t == 1) return direction;
-////		return (location - v).normalized();
-////	}
-//	void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
-//	//Notes:
-//	//	This is an abstract class that will generate a ray starting from
-//	//		the position stored in local to the position of the light source.
-//	//		You might want to consider creating 2 derived classes for
-//	//		point light source and directional light source.
-//	//		For directional light, the origin of the ray is the same, and the ray points to the light direction, however, t_max is infinity.
-//};
+class Light{
+public:
+	Color color;
+	LightType l;
+	Vector3f pos;
+	Vector3f dir;
+	Light(){
+		color = Color();
+		l = DIRECTIONALLIGHT;
+	}
+	Light(Color c, LightType lt, Vector3f vec){
+		color = c;
+		l = lt;
+		if (l == POINTLIGHT)	pos = vec;
+		else if (l == DIRECTIONALLIGHT) dir = (-vec).normalized();
+	}
+	void generateLightRay(LocalGeo local, Ray* lray, Color* lcolor){
+		*lcolor = color;
+		if (l == POINTLIGHT){
+			*lray = Ray(local.position, (pos - local.position).normalized(), 0, (pos - local.position).squaredNorm());
+		}
+		else if (l == DIRECTIONALLIGHT) {
+			*lray = Ray(local.position, dir, 0, FLT_MAX);
+		}
+	}
+};
 
 class BRDF{
-public:
-	Vector3f ka;
-	Vector3f kd;
-	Vector3f ks;
+	Color ka;
+	Color kd;
+	Color ks;
 	Vector3f kr; //reflection coefficient
+
+public:
 	BRDF(){
-		ka = Vector3f(0, 0, 0);
-		kd = Vector3f(0, 0, 0);
-		ks = Vector3f(0, 0, 0);
+		ka = Color(Vector3f(0, 0, 0));
+		kd = Color(Vector3f(0, 0, 0));
+		ks = Color(Vector3f(0, 0, 0));
 		kr = Vector3f(0, 0, 0);
 	}
 	BRDF(Vector3f ambient, Vector3f diffuse, Vector3f specular, Vector3f reflection){
-		ka = ambient;
-		kd = diffuse;
-		ks = specular;
+		ka = Color(ambient);
+		kd = Color(diffuse);
+		ks = Color(specular);
 		kr = reflection;
+	}
+	Color ambient(){
+		return ka;
+	}
+
+	Color diffuse(Vector3f normal, Vector3f lightVector, Color lightColor) {
+		return kd * lightColor * max(normal.dot(lightVector), 0);
+	}
+
+	Color specular(Vector3f normal, Vector3f lightVector, Color lightColor, float power) {
+		Vector3f reflect = (-lightVector + 2 * lightVector.dot(normal) * normal).normalized();
+		return ks * lightColor * pow(max(reflect.dot(Vector3f(0.0, 0.0, 1.0)), 0), power);
 	}
 };
 
 //class Material{
-//	// Class for storing material. 
-//	// For this example, it just returns a constant material regardless of what local is.
-//	// Later on, when we want to support texture mapping, this need to be modified.
+////	 Class for storing material. 
+////	 For this example, it just returns a constant material regardless of what local is.
+////	 Later on, when we want to support texture mapping, this need to be modified.
 //public:
 //	BRDF constantBRDF;
 //	Material(){
@@ -189,29 +228,7 @@ public:
 //	}
 //};
 
-//class Intersection{
-//public:
-//	LocalGeo localGeo;
-//	Primitive* primitive;
-//};
 
-class LocalGeo{
-	//	Store the local geometry at the intersection point.May need to store
-	//		other quantities(eg.texture coordinate) in a more complicated
-	//		raytracer.
-public:
-	Vector3f position;
-	Normal normal;
-	LocalGeo(){
-		position = Vector3f(0, 0, 0);
-		normal = Normal();
-	}
-	LocalGeo(Vector3f p, Normal n){
-		position = p;
-		normal = n;
-	}
-
-};
 
 class Shape{
 public:
@@ -234,54 +251,50 @@ public:
 		radius = r;
 	}
 	bool intersect(Ray& ray, float* thit, LocalGeo* local) {
-		float A = ray.direction.squaredNorm();
-		float B = (ray.direction * 2.0).dot(ray.point - center);
-		float C = (ray.point - center).squaredNorm() - sqr(radius);
-		float disc =  sqr(B) - 4*A*C;
-		if (disc >= 0) {
-			float t = min((-B + sqrt(disc)) / (2 * A), (-B - sqrt(disc)) / (2 * A));
-			if (t > ray.t_min && t < ray.t_max){
-					*thit = t;
-					Vector3f p = ray.atTime(t);
-					*local = LocalGeo(p, Normal(2 * (p - center)));
-					return true;
-				}
+		if (intersectP(ray)){
+			Vector3f d = ray.direction;
+			Vector3f e = ray.point;
+			Vector3f c = center;
+			float x = sqr(d.dot(e - c)) - ((d.dot(d)) * (e-c).dot(e-c) - sqr(radius));
+			float t = (-d.dot(e - c) - (sqrt(x))) / (d.dot(d));
+			if (t >= ray.t_min && t < ray.t_max){
+				*thit = t;
+				Vector3f p = ray.atTime(t);
+				*local = LocalGeo(p, Normal(p - c));
+				return true;
 			}
+		}
 		return false;
 	}
 	bool intersectP(Ray& ray) {
-		float A = ray.direction.squaredNorm();
-		float B = (ray.direction * 2.0).dot(ray.point - center);
-		float C = (ray.point - center).squaredNorm() - sqr(radius);
+		Vector3f d = ray.direction;
+		Vector3f e = ray.point;
+		Vector3f c = center;
+		float A = d.dot(d);
+		float B = (2 * d).dot(e - c);
+		float C = (e - c).dot(e-c) - sqr(radius);
 		float disc = sqr(B) - 4 * A*C;
 		return disc >= 0;
 	}
 };
 
-//Primitive will transform the ray from world space to object space
-//and hand it to Shape to do intersection in object space.
-//Shape then computes the intersection and returns the result to Primitive.
+
+////Shape then computes the intersection and returns the result to Primitive.
 //
 //class Primitive{
 //public:
-//
-//	bool intersect(Ray& ray, float* thit, Intersection* in){
-//	//TODO
-//	}
-//	bool intersectP(Ray& ray){
-//	//TODO
-//	}
-//	void getBRDF(LocalGeo& local, BRDF* brdf);
-//
-////Notes:
 //	//Abstract class for primitives in the scene
+//	virtual bool intersect(Ray& ray, float* thit, Intersection* in) = 0;
+//	virtual void getBRDF(LocalGeo& local, BRDF* brdf) = 0;
+//	//Primitive will transform the ray from world space to object space
+//	//and hand it to Shape to do intersection in object space.
 //};
 //
 //class GeometricPrimitive : Primitive{
 //public:
-//	Transformation objToWorld, worldToObj;
+//	//Transformation objToWorld, worldToObj;
 //	Shape* shape;
-//	Material* mat;
+//	//Material* mat;
 //	
 //	bool intersect(Ray& ray, float* thit, Intersection* in)  {
 //		Ray oray = worldToObj * ray;
@@ -291,14 +304,8 @@ public:
 //		in->localGeo = objToWorld * olocal;
 //		return true;
 //	}
-//
-//	bool intersectP(Ray& ray) {
-//		Ray oray = worldToObj*ray;
-//		return shape->intersectP(oray);
-//	}
-//
 //	void getBRDF(LocalGeo& local, BRDF* brdf) {
-//		mat = getBRDF(local, brdf);
+//		*brdf = shape.brdf;
 //	}
 //};
 //
@@ -321,7 +328,11 @@ public:
 //};
 //
 
-
+//class Intersection{
+//public:
+//	LocalGeo localGeo;
+//	Primitive* primitive;
+//};
 
 class Sample{
 public:
@@ -340,16 +351,15 @@ public:
 
 class Sampler{
 public:
-	float dx, dy; //dimension of our output
-	float curr_x = 0.0;
-	float curr_y = 0.0;
+	int dx, dy; //dimension of our output
+	int curr_x = 0, curr_y = 0;
 	Sampler(){
-		dx = 0.0;
-		dy = 0.0;
+		dx = 0;
+		dy = 0;
 	}
-	Sampler(float x, float y){
-		dx = x;
-		dy = y;
+	Sampler(int x, int y){
+		dx = x - 1;
+		dy = y - 1;
 	}
 	//generates one sample per pixel
 	bool generateSample(Sample* sample){
@@ -358,11 +368,11 @@ public:
 			if (curr_y >= dy){
 				return false;
 			}
-			curr_y += 1.0;
-			curr_x = 0.0;
+			curr_y += 1;
+			curr_x = 0;
 		}
 		else{
-			curr_x += 1.0;
+			curr_x += 1;
 		}
 		return true;
 	}
@@ -438,7 +448,11 @@ public:
 	void generateRay(Sample& sample, Ray* ray){
 		float u = (sample.dx + 0.5) / dx;
 		float v = (sample.dy + 0.5) / dy;
-		Vector3f p = u * (v * LL + (1 - v) * UL) + (1 - u) * (v * LR + (1 - v) * UR);
+		if (u > 1 || v > 1){
+			cout << "u or v is greater than 1" << endl;
+			return;
+		}
+		Vector3f p = (1 - u) * ((1 - v) * LL + v * UL) + u * ((1 - v) * LR + v * UR);
 		*ray = Ray(eye, p - eye, t_min, t_max);
 	}
 
@@ -463,34 +477,34 @@ public:
 		float thit = 0;
 		LocalGeo lg = LocalGeo();
 		if (depth <= 0){
-		//Make the color black and return
-			*color = c;
+			*color = c; //Make the color black and return
 			return;
 		}
-		//if (!primitive.intersect(ray, &thit, &in) {
-		// No intersection
-		//Make the color black and return
-		//}
 		if (!sphere.intersect(ray, &thit, &lg)){
-			*color = c;
+			*color = c; //Make the color black and return
 			return;
 		}
-		*color = Color(Vector3f(1.0, 0, 0));
-
 		// Obtain the brdf at intersection point
 		//in.primitive->getBRDF(in.local, &brdf);
-
-		// There is an intersection, loop through all light source
-		//for (i = 0; i < #lights; i++) {
-			//lights[i].generateLightRay(in.local, &lray, &lcolor);
-
-			// Check if the light is blocked or not
-			//if (!primitive->intersectP(lray))
-				// If not, do shading calculation for this
-				// light source
-				//*color += shading(in.local, brdf, lray, lcolor);
+		BRDF b = sphere.brdf;
+		Ray lightray;
+		Color lightColor;
+		c = c + b.ambient();
+		//for (int i = 0; i < pLights.size(); i++){	// loop through all light sources
+		pLights[0].generateLightRay(lg, &lightray, &lightColor);
+			//if (!sphere.intersectP(lightray)){
+				c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+				c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+			//}
 		//}
-
+		//for (int i = 0; i < dLights.size(); i++){	// loop through all light sources
+		//	dLights[i].generateLightRay(lg, &lightray, &lightColor);
+		//	if (!sphere.intersectP(lightray)){
+		//		c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+		//		c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+		//	}
+		//}
+		*color = c;
 		// Handle mirror reflection
 		//if (brdf.kr > 0) {
 			//reflectRay = createReflectRay(in.local, ray);
@@ -540,6 +554,14 @@ public:
 	void addSphere(Sphere s){
 		raytracer.addSphere(s);
 	}
+	void addLight(Light light){
+		if (light.l == POINTLIGHT){
+			pLights.push_back(light);
+		}
+		else if (light.l == DIRECTIONALLIGHT){
+			dLights.push_back(light);
+		}
+	}
 
 	void render() {	
 		Sample sample = Sample();
@@ -554,19 +576,24 @@ public:
 	}
 };
 
+
+
+
 int main(int argc, char *argv[]) {
 	
 	//hardcoded values:
 
 	Vector3f eye = Vector3f(0, 0, 0);
-	Vector3f ll = Vector3f(-1, -1, -1);
-	Vector3f lr = Vector3f(1, -1, -1);
+	
 	Vector3f ul = Vector3f(-1, 1, -1);
 	Vector3f ur = Vector3f(1, 1, -1);
-	Scene s = Scene(eye, ll, lr, ul, ur, 400, 400, 1);
-	BRDF spherebrdf = BRDF(Vector3f(1.0, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 0));
+	Vector3f lr = Vector3f(1, -1, -1);
+	Vector3f ll = Vector3f(-1, -1, -1);
+	Scene s = Scene(eye, ll, lr, ul, ur, 100, 100, 1);
+	BRDF spherebrdf = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0, 0, 0));
 	Sphere sp = Sphere(Vector3f(0, 0, -2), 1.0, spherebrdf);
 	s.addSphere(sp);
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, -200, 100)));
 	s.render();
 	return 0;
 }
