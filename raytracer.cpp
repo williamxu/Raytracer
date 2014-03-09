@@ -43,15 +43,11 @@ class Normal {
 public:
 	Vector3f xyz;
 	Normal(){
-		xyz = Vector3f(0,0,1);
+		xyz = Vector3f(0, 0, 1);
 	}
 	Normal(Vector3f vector){
 		xyz = vector.normalized();
 	}
-	/*Notes:
-	Constructor from 3 floats
-		Support + , -
-	Note : Need to be normalized after operations(Be careful for 0 vector)*/
 };
 
 class Ray{
@@ -233,8 +229,14 @@ public:
 class Shape{
 public:
 	BRDF brdf;
-	virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
-	virtual bool intersectP(Ray& ray) = 0;
+	//please override these functions
+	bool intersect(Ray& ray, float* thit, LocalGeo* local){
+		return true;
+	}
+	bool intersectP(Ray& ray){
+		return true;
+	}
+
 };
 
 class Sphere : public Shape{
@@ -251,16 +253,16 @@ public:
 		radius = r;
 	}
 	bool intersect(Ray& ray, float* thit, LocalGeo* local) {
-		float A = ray.direction.squaredNorm();
-		float B = ray.direction.dot(ray.point - center) * 2;
-		float C = (ray.point - center).squaredNorm() - sqr(radius);
-		float disc = sqr(B) - 4 * A*C;
-		if (disc >= 0) {
-			float t = (-B - sqrt(disc)) / A;
+		if (intersectP(ray)){
+			Vector3f d = ray.direction;
+			Vector3f e = ray.point;
+			Vector3f c = center;
+			float x = sqr(d.dot(e - c)) - ((d.dot(d)) * (e - c).dot(e - c) - sqr(radius));
+			float t = (-d.dot(e - c) - (sqrt(x))) / (d.dot(d));
 			if (t >= ray.t_min && t < ray.t_max){
 				*thit = t;
 				Vector3f p = ray.atTime(t);
-				*local = LocalGeo(p, Normal(2 * (p - center)));
+				*local = LocalGeo(p, Normal(p - c));
 				return true;
 			}
 		}
@@ -272,7 +274,7 @@ public:
 		Vector3f c = center;
 		float A = d.dot(d);
 		float B = (2 * d).dot(e - c);
-		float C = (e - c).dot(e-c) - sqr(radius);
+		float C = (e - c).dot(e - c) - sqr(radius);
 		float disc = sqr(B) - 4 * A*C;
 		return disc >= 0;
 	}
@@ -343,7 +345,7 @@ public:
 			return false;
 		}
 		float beta = (j * (e * i - h * f) + k * (g * f - d * i) + l * (d * h - e * g)) / M;
-		if (beta < 0 || beta > (1 - gamma)){
+		if (beta < 0 || beta >(1 - gamma)){
 			return false;
 		}
 		*thit = t;
@@ -440,7 +442,7 @@ public:
 	}
 	//generates one sample per pixel
 	bool generateSample(Sample* sample){
-		*sample = Sample(curr_x, curr_y);
+		*sample = Sample((float)curr_x, (float)curr_y);
 		if (curr_x >= dx) {
 			if (curr_y >= dy){
 				return false;
@@ -461,22 +463,22 @@ public:
 	FIBITMAP* bitmap;
 	int dx, dy;
 	Film(){
-		dx = 0.0;
-		dy = 0.0;
+		dx = 0;
+		dy = 0;
 	}
-	Film(float x, float y){
+	Film(int x, int y){
 		FreeImage_Initialise();
-		dx = (int) x; 
-		dy = (int) y;
+		dx = x;
+		dy = y;
 		bitmap = FreeImage_Allocate(dx, dy, 24); //24?
 	}
 	// Will write the color to (sample.x, sample.y) on the image
 	void commit(Sample& sample, Color& c){
 		RGBQUAD color;
-		color.rgbRed = min(c.rgb[0], 1) * 255.0;
-		color.rgbGreen = min(c.rgb[1], 1) * 255.0;
-		color.rgbBlue = min(c.rgb[2], 1) * 255.0;
-		FreeImage_SetPixelColor(bitmap, (int) sample.dx, (int) sample.dy, &color);
+		color.rgbRed = min(c.rgb[0], 1) * 255;
+		color.rgbGreen = min(c.rgb[1], 1) * 255;
+		color.rgbBlue = min(c.rgb[2], 1) * 255;
+		FreeImage_SetPixelColor(bitmap, (int)sample.dx, (int)sample.dy, &color);
 
 	}
 	// Output image to a file
@@ -497,8 +499,7 @@ public:
 	Vector3f LR;
 	Vector3f UL;
 	Vector3f UR;
-	float dx;
-	float dy;
+	int dx, dy;
 	float t_min;
 	float t_max;
 	Camera(){
@@ -511,7 +512,7 @@ public:
 		t_min = 1;
 		t_max = FLT_MAX;
 	}
-	Camera(Vector3f p, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, float tmin, float tmax){
+	Camera(Vector3f p, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int x, int y, float tmin, float tmax){
 		LL = ll;
 		LR = lr;
 		UL = ul;
@@ -523,8 +524,8 @@ public:
 		t_max = tmax;
 	}
 	void generateRay(Sample& sample, Ray* ray){
-		float u = (sample.dx + 0.5) / dx;
-		float v = (sample.dy + 0.5) / dy;
+		float u = (float)(sample.dx + 0.5) / dx;
+		float v = (float)(sample.dy + 0.5) / dy;
 		if (u > 1 || v > 1){
 			cout << "u or v is greater than 1" << endl;
 			return;
@@ -562,19 +563,19 @@ public:
 			*color = c; //Make the color black and return
 			return;
 		}
-		for (int si = 0; si < spheres.size(); si++){
+		for (unsigned int si = 0; si < spheres.size(); si++){
 			if (spheres[si].intersect(ray, &thit, &lg)){
 				BRDF b = spheres[si].brdf;
 				Ray lightray;
 				Color lightColor;
 				c = c + b.ambient();
-				for (int i = 0; i < pLights.size(); i++){	// loop through all light sources
+				for (unsigned int i = 0; i < pLights.size(); i++){	// loop through all light sources
 					pLights[0].generateLightRay(lg, &lightray, &lightColor);
 					//if (!sphere.intersectP(lightray)){
 					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
 					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
 				}
-				for (int i = 0; i < dLights.size(); i++){	// loop through all light sources
+				for (unsigned int i = 0; i < dLights.size(); i++){	// loop through all light sources
 					dLights[i].generateLightRay(lg, &lightray, &lightColor);
 					//if (!spheres[si].intersectP(lightray)){
 					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
@@ -582,29 +583,31 @@ public:
 					//}
 				}
 			}
-			*color = c; //Make the color black and return
 		}
-		if (!triangle.intersect(ray, &thit, &lg)){
-			*color = c;
-			return;
-		}
-		*color = Color(Vector3f(1.0, 0, 0));
+		*color = c; //Make the color black and return
+		//if (!triangle.intersect(ray, &thit, &lg)){
+		//	*color = c;
+		//	return;
+		//}
+		//*color = Color(Vector3f(1.0, 0, 0));
+
+
 		// Handle mirror reflection
 		//if (brdf.kr > 0) {
-			//reflectRay = createReflectRay(in.local, ray);
+		//reflectRay = createReflectRay(in.local, ray);
 
-			// Make a recursive call to trace the reflected ray
-			//trace(reflectRay, depth + 1, &tempColor);
-			//*color += brdf.kr * tempColor;
+		// Make a recursive call to trace the reflected ray
+		//trace(reflectRay, depth + 1, &tempColor);
+		//*color += brdf.kr * tempColor;
 		//}
 
 	}
-//Notes:
-//	Shading is similar to hw2
-//		Beware when you generate reflection ray, make sure the ray don’t start
-//		exactly on the surface, or the intersection routine may return
-//		intersection point at the starting point of the ray. (This apply to light
-//		ray generation as well)
+	//Notes:
+	//	Shading is similar to hw2
+	//		Beware when you generate reflection ray, make sure the ray don’t start
+	//		exactly on the surface, or the intersection routine may return
+	//		intersection point at the starting point of the ray. (This apply to light
+	//		ray generation as well)
 
 };
 
@@ -612,7 +615,7 @@ class Scene{
 public:
 	Vector3f eye; //the camera. can get position
 	Vector3f LL, LR, UL, UR; // the four corners of the image plane
-	float dx, dy; //the output image dimensions in pixels
+	int dx, dy; //the output image dimensions in pixels
 	int recursionDepth;
 	Sampler sampler = Sampler();
 	Camera camera = Camera();
@@ -621,7 +624,7 @@ public:
 
 	//shapes list
 	//necessary objects
-	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth){
+	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int x, int y, int depth){
 		eye = e;
 		LL = ll;
 		LR = lr;
@@ -651,7 +654,7 @@ public:
 		raytracer.addTriangle(t);
 	}
 
-	void render() {	
+	void render() {
 		Sample sample = Sample();
 		Ray ray = Ray();
 		Color color = Color();
@@ -665,30 +668,46 @@ public:
 };
 
 
+void spheretest(){
+
+	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, 0);
+	Vector3f lr = Vector3f(1, -1, 0);
+	Vector3f ll = Vector3f(-1, -1, 0);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
+	//s.addLight(Light(Color(Vector3f(0.3, 1.0, 1.0)), DIRECTIONALLIGHT, Vector3f(-1.0, 1.0, 1.0)));
+	
+
+	//spheres
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1,1,0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
+	s.addSphere(sp);
+
+	//BRDF spherebrdf = BRDF(Vector3f(0.0, 0.1, 0.1), Vector3f(0.0, 1.0, 1.0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	//sp = Sphere(Vector3f(0.8, -0.8, -3.0), 3.0, spherebrdf);
+	//s.addSphere(sp);
+
+	//spherebrdf = BRDF(Vector3f(0.3, 0.1, 0.2), Vector3f(0.8, 0.9, 0.3), Vector3f(1.0, 1.0, 1.0), Vector3f(0.0, 0.0, 0.0));
+	//sp = Sphere(Vector3f(0.6, 0.7, -1.0), 2.0, spherebrdf);
+	//s.addSphere(sp);
+
+	//render call
+	s.render();
+}
 
 
 int main(int argc, char *argv[]) {
-	
-	//hardcoded values:
-	Vector3f eye = Vector3f(0, 0, 5);
-	
-	Vector3f ul = Vector3f(-1, 1, 1);
-	Vector3f ur = Vector3f(1, 1, 1);
-	Vector3f lr = Vector3f(1, -1, 1);
-	Vector3f ll = Vector3f(-1, -1, 1);
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
-	BRDF spherebrdf = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0, 0, 0));
-	Sphere sp = Sphere(Vector3f(-0.7, 0, -2), 1.0, spherebrdf);
-	s.addSphere(sp);
-	spherebrdf = BRDF(Vector3f(0, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(0.8, 0.8, 0.8), Vector3f(0, 0, 0));
-	sp = Sphere(Vector3f(0.8, -0.8, -3), 3.0, spherebrdf);
-	s.addSphere(sp);
-	spherebrdf = BRDF(Vector3f(0.3, 0.1, 0.2), Vector3f(0.8, 0.9, 0.3), Vector3f(1, 1, 1), Vector3f(0, 0, 0));
-	sp = Sphere(Vector3f(0.6, 0.7, -1), 2.0, spherebrdf);
-	s.addSphere(sp);
-	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, -200, 100)));
-	s.addLight(Light(Color(Vector3f(0.3, 1, 1)), DIRECTIONALLIGHT, Vector3f(-1, 1, 1)));
-	s.render();
+
+	spheretest();
 	return 0;
 }
 
