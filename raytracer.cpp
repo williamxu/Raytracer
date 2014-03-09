@@ -33,6 +33,7 @@ inline float sqr(float x) { return x*x; }
 vector<Light>	pLights;
 vector<Light>	dLights;
 float specularCoefficient = 16; //0
+char* filename = "output.bmp";
 
 //****************************************************
 // Some Classes
@@ -161,7 +162,7 @@ public:
 		color = c;
 		l = lt;
 		if (l == POINTLIGHT)	pos = vec;
-		else if (l == DIRECTIONALLIGHT) dir = (vec).normalized();
+		else if (l == DIRECTIONALLIGHT) dir = -(vec).normalized();
 	}
 	void generateLightRay(LocalGeo local, Ray* lray, Color* lcolor){
 		*lcolor = color;
@@ -257,7 +258,7 @@ public:
 			Vector3f d = ray.direction;
 			Vector3f e = ray.point;
 			Vector3f c = center;
-			float x = sqr(d.dot(e - c)) - ((d.dot(d)) * (e - c).dot(e - c) - sqr(radius));
+			float x = sqr(d.dot(e - c)) - ((d.dot(d)) * ((e - c).dot(e - c) - sqr(radius)));
 			float t = (-d.dot(e - c) - (sqrt(x))) / (d.dot(d));
 			if (t >= ray.t_min && t < ray.t_max){
 				*thit = t;
@@ -442,7 +443,7 @@ public:
 	}
 	//generates one sample per pixel
 	bool generateSample(Sample* sample){
-		*sample = Sample((float)curr_x, (float)curr_y);
+		*sample = Sample(curr_x, curr_y);
 		if (curr_x >= dx) {
 			if (curr_y >= dy){
 				return false;
@@ -483,7 +484,7 @@ public:
 	}
 	// Output image to a file
 	void writeImage(){
-		char* filename = "output.bmp";
+
 		int index = string(filename).find_last_of('.') + 1;
 		if (FreeImage_Save(FreeImage_GetFIFFromFormat(filename + index), bitmap, filename)) {
 			cout << "Image saved successfully." << endl;
@@ -499,7 +500,7 @@ public:
 	Vector3f LR;
 	Vector3f UL;
 	Vector3f UR;
-	int dx, dy;
+	float dx, dy;
 	float t_min;
 	float t_max;
 	Camera(){
@@ -512,7 +513,7 @@ public:
 		t_min = 1;
 		t_max = FLT_MAX;
 	}
-	Camera(Vector3f p, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int x, int y, float tmin, float tmax){
+	Camera(Vector3f p, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, float tmin, float tmax){
 		LL = ll;
 		LR = lr;
 		UL = ul;
@@ -524,8 +525,8 @@ public:
 		t_max = tmax;
 	}
 	void generateRay(Sample& sample, Ray* ray){
-		float u = (float)(sample.dx + 0.5) / dx;
-		float v = (float)(sample.dy + 0.5) / dy;
+		float u = (sample.dx + 0.5) / dx;
+		float v = (sample.dy + 0.5) / dy;
 		if (u > 1 || v > 1){
 			cout << "u or v is greater than 1" << endl;
 			return;
@@ -582,9 +583,10 @@ public:
 					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
 					//}
 				}
-			}
+			}			
 		}
-		*color = c; //Make the color black and return
+		*color = c;
+
 		//if (!triangle.intersect(ray, &thit, &lg)){
 		//	*color = c;
 		//	return;
@@ -615,7 +617,7 @@ class Scene{
 public:
 	Vector3f eye; //the camera. can get position
 	Vector3f LL, LR, UL, UR; // the four corners of the image plane
-	int dx, dy; //the output image dimensions in pixels
+	float dx, dy; //the output image dimensions in pixels
 	int recursionDepth;
 	Sampler sampler = Sampler();
 	Camera camera = Camera();
@@ -624,7 +626,7 @@ public:
 
 	//shapes list
 	//necessary objects
-	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int x, int y, int depth){
+	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth){
 		eye = e;
 		LL = ll;
 		LR = lr;
@@ -668,8 +670,7 @@ public:
 };
 
 
-void spheretest(){
-
+void spheretest_yellow_shading(){
 	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
 
 	//camera and image plane
@@ -684,30 +685,140 @@ void spheretest(){
 
 	//lights
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
-	//s.addLight(Light(Color(Vector3f(0.3, 1.0, 1.0)), DIRECTIONALLIGHT, Vector3f(-1.0, 1.0, 1.0)));
-	
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1,1,0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
 	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
 	s.addSphere(sp);
 
-	//BRDF spherebrdf = BRDF(Vector3f(0.0, 0.1, 0.1), Vector3f(0.0, 1.0, 1.0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
-	//sp = Sphere(Vector3f(0.8, -0.8, -3.0), 3.0, spherebrdf);
-	//s.addSphere(sp);
-
-	//spherebrdf = BRDF(Vector3f(0.3, 0.1, 0.2), Vector3f(0.8, 0.9, 0.3), Vector3f(1.0, 1.0, 1.0), Vector3f(0.0, 0.0, 0.0));
-	//sp = Sphere(Vector3f(0.6, 0.7, -1.0), 2.0, spherebrdf);
-	//s.addSphere(sp);
-
+	filename = "spheretest_yellow_shading.bmp";
 	//render call
 	s.render();
+	pLights.clear();
+	dLights.clear();
 }
+void spheretest_viewing_angle1(){
+	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
 
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 0);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, -2);
+	Vector3f lr = Vector3f(1, -1, -2);
+	Vector3f ll = Vector3f(-1, -1, 0);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
+
+	//spheres
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	Sphere sp = Sphere(Vector3f(-1,1,-2), 1.0, yellow);
+	s.addSphere(sp);
+
+	filename = "spheretest_view1.bmp";
+	//render call
+	s.render();
+	pLights.clear();
+	dLights.clear();
+}
+void spheretest_viewing_angle2(){
+	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, 1);
+	Vector3f lr = Vector3f(1, -1, 0);
+	Vector3f ll = Vector3f(-1, -1, -1);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
+
+	//spheres
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
+	s.addSphere(sp);
+
+	filename = "spheretest_view2.bmp";
+	//render call
+	s.render();
+	pLights.clear();
+	dLights.clear();
+}
+void spheretest_with_two_lights(){
+	//"-pl 200 200 200 0.6 0.6 0.6 -dl 0 1 -1 0 0.4 0.4 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, 0);
+	Vector3f lr = Vector3f(1, -1, 0);
+	Vector3f ll = Vector3f(-1, -1, 0);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
+	s.addLight(Light(Color(Vector3f(0, 0.4, 0.4)), DIRECTIONALLIGHT, Vector3f(0, 1, -1)));
+
+	//spheres
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
+	s.addSphere(sp);
+
+	filename = "spheretest_pt_dir.bmp";
+	//render call
+	s.render();
+	pLights.clear();
+	dLights.clear();
+}
+void spheretest_with_two_spheres(){
+	//"-pl 200 200 200 0.6 0.6 0.6 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, 0);
+	Vector3f lr = Vector3f(1, -1, 0);
+	Vector3f ll = Vector3f(-1, -1, 0);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
+
+	//spheres
+	BRDF blue = BRDF(Vector3f(0, 0.05, 0.1), Vector3f(0.11, 0.20, 0.54), Vector3f(0,1,1), Vector3f(0.0, 0.0, 0.0));
+	Sphere sp = Sphere(Vector3f(-0.6, 0.0, -2.0), 1.0, blue);
+	s.addSphere(sp);
+
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	sp = Sphere(Vector3f(1, 0.9, -2.4), 1.0, yellow);
+	s.addSphere(sp);
+
+	filename = "spheretest_two_spheres.bmp";
+	//render call
+	s.render();
+	pLights.clear();
+	dLights.clear();
+}
 
 int main(int argc, char *argv[]) {
 
-	spheretest();
+	spheretest_yellow_shading();
+	spheretest_with_two_lights();
+	spheretest_with_two_spheres();
+	spheretest_viewing_angle1();
+	spheretest_viewing_angle2();
+
 	return 0;
 }
 
