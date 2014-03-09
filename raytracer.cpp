@@ -165,7 +165,7 @@ public:
 		color = c;
 		l = lt;
 		if (l == POINTLIGHT)	pos = vec;
-		else if (l == DIRECTIONALLIGHT) dir = (-vec).normalized();
+		else if (l == DIRECTIONALLIGHT) dir = (vec).normalized();
 	}
 	void generateLightRay(LocalGeo local, Ray* lray, Color* lcolor){
 		*lcolor = color;
@@ -464,13 +464,13 @@ public:
 
 class RayTracer{
 public:
-	Sphere sphere;
+	vector<Sphere> spheres;
 
 	RayTracer(){
 
 	}
 	void addSphere(Sphere s){
-		sphere = s;
+		spheres.push_back(s);
 	}
 	void trace(Ray& ray, int depth, Color* color) {
 		Color c = Color();
@@ -480,31 +480,29 @@ public:
 			*color = c; //Make the color black and return
 			return;
 		}
-		if (!sphere.intersect(ray, &thit, &lg)){
+		for (int si = 0; si < spheres.size(); si++){
+			if (spheres[si].intersect(ray, &thit, &lg)){
+				BRDF b = spheres[si].brdf;
+				Ray lightray;
+				Color lightColor;
+				c = c + b.ambient();
+				for (int i = 0; i < pLights.size(); i++){	// loop through all light sources
+					pLights[0].generateLightRay(lg, &lightray, &lightColor);
+					//if (!sphere.intersectP(lightray)){
+					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+				}
+
+				for (int i = 0; i < dLights.size(); i++){	// loop through all light sources
+					dLights[i].generateLightRay(lg, &lightray, &lightColor);
+					//if (!spheres[si].intersectP(lightray)){
+					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+					//}
+				}
+			}
 			*color = c; //Make the color black and return
-			return;
 		}
-		// Obtain the brdf at intersection point
-		//in.primitive->getBRDF(in.local, &brdf);
-		BRDF b = sphere.brdf;
-		Ray lightray;
-		Color lightColor;
-		c = c + b.ambient();
-		//for (int i = 0; i < pLights.size(); i++){	// loop through all light sources
-		pLights[0].generateLightRay(lg, &lightray, &lightColor);
-			//if (!sphere.intersectP(lightray)){
-				c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-				c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
-			//}
-		//}
-		//for (int i = 0; i < dLights.size(); i++){	// loop through all light sources
-		//	dLights[i].generateLightRay(lg, &lightray, &lightColor);
-		//	if (!sphere.intersectP(lightray)){
-		//		c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-		//		c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
-		//	}
-		//}
-		*color = c;
 		// Handle mirror reflection
 		//if (brdf.kr > 0) {
 			//reflectRay = createReflectRay(in.local, ray);
@@ -583,17 +581,24 @@ int main(int argc, char *argv[]) {
 	
 	//hardcoded values:
 
-	Vector3f eye = Vector3f(0, 0, 0);
+	Vector3f eye = Vector3f(0, 0, 5);
 	
-	Vector3f ul = Vector3f(-1, 1, -1);
-	Vector3f ur = Vector3f(1, 1, -1);
-	Vector3f lr = Vector3f(1, -1, -1);
-	Vector3f ll = Vector3f(-1, -1, -1);
-	Scene s = Scene(eye, ll, lr, ul, ur, 100, 100, 1);
+	Vector3f ul = Vector3f(-1, 1, 1);
+	Vector3f ur = Vector3f(1, 1, 1);
+	Vector3f lr = Vector3f(1, -1, 1);
+	Vector3f ll = Vector3f(-1, -1, 1);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
 	BRDF spherebrdf = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0, 0, 0));
-	Sphere sp = Sphere(Vector3f(0, 0, -2), 1.0, spherebrdf);
+	Sphere sp = Sphere(Vector3f(-0.7, 0, -2), 1.0, spherebrdf);
+	s.addSphere(sp);
+	spherebrdf = BRDF(Vector3f(0, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(0.8, 0.8, 0.8), Vector3f(0, 0, 0));
+	sp = Sphere(Vector3f(0.8, -0.8, -3), 3.0, spherebrdf);
+	s.addSphere(sp);
+	spherebrdf = BRDF(Vector3f(0.3, 0.1, 0.2), Vector3f(0.8, 0.9, 0.3), Vector3f(1, 1, 1), Vector3f(0, 0, 0));
+	sp = Sphere(Vector3f(0.6, 0.7, -1), 2.0, spherebrdf);
 	s.addSphere(sp);
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, -200, 100)));
+	s.addLight(Light(Color(Vector3f(0.3, 1, 1)), DIRECTIONALLIGHT, Vector3f(-1, 1, 1)));
 	s.render();
 	return 0;
 }
