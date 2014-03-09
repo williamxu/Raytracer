@@ -235,12 +235,12 @@ public:
 	}
 	bool intersect(Ray& ray, float* thit, LocalGeo* local) {
 		float A = ray.direction.squaredNorm();
-		float B = (ray.direction * 2.0).dot(ray.point - center);
+		float B = ray.direction.dot(ray.point - center) * 2;
 		float C = (ray.point - center).squaredNorm() - sqr(radius);
 		float disc =  sqr(B) - 4*A*C;
 		if (disc >= 0) {
-			float t = min((-B + sqrt(disc)) / (2 * A), (-B - sqrt(disc)) / (2 * A));
-			if (t > ray.t_min && t < ray.t_max){
+			float t = (-B - sqrt(disc)) / A;
+			if (t >= ray.t_min && t < ray.t_max){
 					*thit = t;
 					Vector3f p = ray.atTime(t);
 					*local = LocalGeo(p, Normal(2 * (p - center)));
@@ -255,6 +255,82 @@ public:
 		float C = (ray.point - center).squaredNorm() - sqr(radius);
 		float disc = sqr(B) - 4 * A*C;
 		return disc >= 0;
+	}
+};
+
+class Triangle : public Shape{
+public:
+	Vector3f p1; Vector3f p2; Vector3f p3;
+	Triangle(){
+		p1 = Vector3f(0, 0, 0);
+		p2 = Vector3f(0, 0, 0);
+		p3 = Vector3f(0, 0, 0);
+	}
+	Triangle(Vector3f P1, Vector3f P2, Vector3f P3, BRDF color){
+		p1 = P1;
+		p2 = P2;
+		p3 = P3;
+		brdf = color;
+	}
+	bool intersectP(Ray& ray){
+		float a = p1.x() - p2.x();
+		float b = p1.y() - p2.y();
+		float c = p1.z() - p2.z();
+		float d = p1.x() - p3.x();
+		float e = p1.y() - p3.y();
+		float f = p1.z() - p3.z();
+		float g = ray.direction.x();
+		float h = ray.direction.y();
+		float i = ray.direction.z();
+		float j = p1.x() - ray.point.x();
+		float k = p1.y() - ray.point.y();
+		float l = p1.z() - ray.point.z();
+		float M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
+		float t = -(f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
+		if (t < ray.t_min || t > ray.t_max){
+			return false;
+		}
+		float gamma = (i * (a * k - j * b) + h * (j * c - a * l) + g * (b * l - k * c)) / M;
+		if (gamma < 0 || gamma > 1){
+			return false;
+		}
+		float beta = (j * (e * i - h * f) + k * (g * f - d * i) + l * (d * h - e * g)) / M;
+		if (beta < 0 || beta > 1 - gamma){
+			return false;
+		}
+		return true;
+	}
+	bool intersect(Ray& ray, float* thit, LocalGeo* local){
+		float a = p1(0) - p2(0);
+		float b = p1(1) - p2(1);
+		float c = p1(2) - p2(2);
+		float d = p1(0) - p3(0);
+		float e = p1(1) - p3(1);
+		float f = p1(2) - p3(2);
+		float g = ray.direction(0);
+		float h = ray.direction(1);
+		float i = ray.direction(2);
+		float j = p1(0) - ray.point(0);
+		float k = p1(1) - ray.point(1);
+		float l = p1(2) - ray.point(2);
+		float M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
+		float t = (-1) * (f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
+		if (t < ray.t_min || t > ray.t_max){
+			return false;
+		}
+		float gamma = (i * (a * k - j * b) + h * (j * c - a * l) + g * (b * l - k * c)) / M;
+		if (gamma < 0 || gamma > 1){
+			return false;
+		}
+		float beta = (j * (e * i - h * f) + k * (g * f - d * i) + l * (d * h - e * g)) / M;
+		if (beta < 0 || beta > (1 - gamma)){
+			return false;
+		}
+		*thit = t;
+		Vector3f p = ray.atTime(t);
+		Vector3f norm = (p2 - p1).cross(p3 - p1);
+		*local = LocalGeo(p, Normal(norm));
+		return true;
 	}
 };
 
@@ -438,7 +514,7 @@ public:
 	void generateRay(Sample& sample, Ray* ray){
 		float u = (sample.dx + 0.5) / dx;
 		float v = (sample.dy + 0.5) / dy;
-		Vector3f p = u * (v * LL + (1 - v) * UL) + (1 - u) * (v * LR + (1 - v) * UR);
+		Vector3f p =  ((1.0 - u) * ((1.0 - v) * LL +  v * UL) +  u * ((1.0 - v) * LR + v * UR));
 		*ray = Ray(eye, p - eye, t_min, t_max);
 	}
 
@@ -451,12 +527,16 @@ public:
 class RayTracer{
 public:
 	Sphere sphere;
+	Triangle triangle;
 
 	RayTracer(){
 
 	}
 	void addSphere(Sphere s){
 		sphere = s;
+	}
+	void addTriangle(Triangle t){
+		triangle = t;
 	}
 	void trace(Ray& ray, int depth, Color* color) {
 		Color c = Color();
@@ -471,7 +551,11 @@ public:
 		// No intersection
 		//Make the color black and return
 		//}
-		if (!sphere.intersect(ray, &thit, &lg)){
+		//if (!sphere.intersect(ray, &thit, &lg)){
+		//	*color = c;
+		//	return;
+		//}
+		if (!triangle.intersect(ray, &thit, &lg)){
 			*color = c;
 			return;
 		}
@@ -533,12 +617,16 @@ public:
 		dy = y;
 		recursionDepth = depth;
 		sampler = Sampler(dx, dy);
-		camera = Camera(eye, ll, lr, ul, ur, x, y, 1, FLT_MAX);
+		camera = Camera(eye, ll, lr, ul, ur, x, y, 1.0, FLT_MAX);
 		film = Film(dx, dy);
 	}
 
 	void addSphere(Sphere s){
 		raytracer.addSphere(s);
+	}
+
+	void addTriangle(Triangle t){
+		raytracer.addTriangle(t);
 	}
 
 	void render() {	
@@ -558,15 +646,17 @@ int main(int argc, char *argv[]) {
 	
 	//hardcoded values:
 
-	Vector3f eye = Vector3f(0, 0, 0);
-	Vector3f ll = Vector3f(-1, -1, -1);
-	Vector3f lr = Vector3f(1, -1, -1);
-	Vector3f ul = Vector3f(-1, 1, -1);
-	Vector3f ur = Vector3f(1, 1, -1);
-	Scene s = Scene(eye, ll, lr, ul, ur, 400, 400, 1);
+	Vector3f eye = Vector3f(0, 0, 2);
+	Vector3f ll = Vector3f(-1, -1, 0);
+	Vector3f lr = Vector3f(1, -1, 0);
+	Vector3f ul = Vector3f(-1, 1, 0);
+	Vector3f ur = Vector3f(1, 1, 0);
+	Scene s = Scene(eye, ll, lr, ul, ur, 500, 500, 1);
 	BRDF spherebrdf = BRDF(Vector3f(1.0, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 0), Vector3f(0, 0, 0));
-	Sphere sp = Sphere(Vector3f(0, 0, -2), 1.0, spherebrdf);
-	s.addSphere(sp);
+	//Sphere sp = Sphere(Vector3f(0, 0, -2), 1.0, spherebrdf);
+	//s.addSphere(sp);
+	Triangle a = Triangle(Vector3f(1.0, 1.0, -1.0), Vector3f(1.0, -1.0, -1.0), Vector3f(0.50, -0.50, -2.0), spherebrdf);
+	s.addTriangle(a);
 	s.render();
 	return 0;
 }
