@@ -234,12 +234,8 @@ class Shape{
 public:
 	BRDF brdf;
 	//please override these functions
-	bool intersect(Ray& ray, float* thit, LocalGeo* local){
-		return true;
-	}
-	bool intersectP(Ray& ray){
-		return true;
-	}
+	virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
+	virtual bool intersectP(Ray& ray) = 0;
 
 };
 
@@ -375,18 +371,17 @@ public:
 //public:
 //	//Transformation objToWorld, worldToObj;
 //	Shape* shape;
-//	//Material* mat;
 //	
 //	bool intersect(Ray& ray, float* thit, Intersection* in)  {
-//		Ray oray = worldToObj * ray;
-//		LocalGeo olocal;
-//		if (!shape->intersect(oray, thit, &olocal))  return false;
-//		in->primitive = this;
-//		in->localGeo = objToWorld * olocal;
+//		//Ray oray = worldToObj * ray;
+//		//LocalGeo olocal;
+//		//if (!shape->intersect(oray, thit, &olocal))  return false;
+//		//in->primitive = this;
+//		//in->localGeo = objToWorld * olocal;
 //		return true;
 //	}
 //	void getBRDF(LocalGeo& local, BRDF* brdf) {
-//		*brdf = shape.brdf;
+//		*brdf = shape->brdf;
 //	}
 //};
 //
@@ -407,7 +402,7 @@ public:
 ////		Also, the in->primitive should be set to the pointer to that primitive.
 ////		When you implement acceleration structure, it will replace this class.
 //};
-//
+
 
 //class Intersection{
 //public:
@@ -535,40 +530,27 @@ public:
 		Vector3f p = (1 - u) * ((1 - v) * LL + v * UL) + u * ((1 - v) * LR + v * UR);
 		*ray = Ray(eye, p - eye, t_min, t_max);
 	}
-
-	//Notes:
-	//	Create a ray starting from the camera that passes through the
-	//		corresponding pixel(sample.x, sample.y) on the image plane.
-	//		(from last week discussion, and also section 10.1 in Shirley’s book)
 };
 
 class RayTracer{
 public:
-	vector<Light>	lights;
-	vector<Triangle> triangles;
-	vector<Sphere> spheres;
+	vector<Light> lights;
+	vector<Shape*> shapes;
 
 
 	RayTracer(){
 
 	}
-	void addSphere(Sphere s){
-		spheres.push_back(s);
+	void addShape(Shape* s){
+		shapes.push_back(s);
 	}
-	void addTriangle(Triangle t){
-		triangles.push_back(t);
-	}
+
 	void addLight(Light l){
 		lights.push_back(l);
 	}
 	boolean shadow(Ray ray){
-		for (unsigned int i = 0; i < spheres.size(); i++){
-			if (spheres[i].intersectP(ray)){
-				return true;
-			}
-		}
-		for (unsigned int i = 0; i < triangles.size(); i++){
-			if (triangles[i].intersectP(ray)){
+		for (Shape* s : shapes){
+			if (s->intersectP(ray)){
 				return true;
 			}
 		}
@@ -583,36 +565,23 @@ public:
 			*color = c; //Make the color black and return
 			return;
 		}
-		for (unsigned int si = 0; si < spheres.size(); si++){
-			if (spheres[si].intersect(ray, &thit, &lg)){
-				BRDF b = spheres[si].brdf;
+		for (Shape* s : shapes){
+			if (s->intersect(ray, &thit, &lg)){
+				BRDF b = s->brdf;
 				Ray lightray;
 				Color lightColor;
 				c = c + b.ambient();
-				for (unsigned int i = 0; i < lights.size(); i++){	// loop through all light sources
-					lights[i].generateLightRay(lg, &lightray, &lightColor);
+				for (Light l : lights){
+					l.generateLightRay(lg, &lightray, &lightColor);
 					if (!shadow(lightray)){
 						c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
 						c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
 					}
 				}
+
 			}
+			*color = c;
 		}
-		for (unsigned int ti = 0; ti < triangles.size(); ti++){
-			if (triangles[ti].intersect(ray, &thit, &lg)){
-				BRDF b = triangles[ti].brdf;
-				Ray lightray;
-				Color lightColor;
-				c = c + b.ambient();
-				for (unsigned int i = 0; i < lights.size(); i++){	// loop through all light sources
-					lights[0].generateLightRay(lg, &lightray, &lightColor);
-					if (!shadow(lightray)){
-						c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-						c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-					}
-				}			}
-		}
-		*color = c;
 
 		// Handle mirror reflection
 		//if (brdf.kr > 0) {
@@ -624,8 +593,6 @@ public:
 		//}
 
 	}
-	//Notes:
-	//	Shading is similar to hw2
 	//		Beware when you generate reflection ray, make sure the ray don’t start
 	//		exactly on the surface, or the intersection routine may return
 	//		intersection point at the starting point of the ray. (This apply to light
@@ -673,15 +640,12 @@ public:
 		film = Film(dx, dy);
 	}
 
-	void addSphere(Sphere s){
-		raytracer.addSphere(s);
-	}
+	
 	void addLight(Light light){
 		raytracer.addLight(light);
 	}
-
-	void addTriangle(Triangle t){
-		raytracer.addTriangle(t);
+	void addShape(Shape* s){
+		raytracer.addShape(s);
 	}
 
 	void render() {
@@ -716,8 +680,7 @@ void spheretest_yellow_shading(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
-	s.addSphere(sp);
+	s.addShape(&Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow));
 
 	filename = "spheretest_yellow_shading.bmp";
 	//render call
@@ -741,13 +704,12 @@ void spheretest_viewing_angle1(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere sp = Sphere(Vector3f(-1, 1, -2), 1.0, yellow);
-	s.addSphere(sp);
+	s.addShape(&Sphere(Vector3f(-1, 1, -2), 1.0, yellow));
 
 	filename = "spheretest_view1.bmp";
 	//render call
 	s.render();
-	
+
 }
 void spheretest_viewing_angle2(){
 	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
@@ -767,8 +729,7 @@ void spheretest_viewing_angle2(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
-	s.addSphere(sp);
+	s.addShape(&Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow));
 
 	filename = "spheretest_view2.bmp";
 	//render call
@@ -793,13 +754,12 @@ void spheretest_with_two_lights(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
-	s.addSphere(sp);
+	s.addShape(&Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow));
 
 	filename = "spheretest_pt_dir.bmp";
 	//render call
 	s.render();
-	
+
 }
 void spheretest_with_two_spheres(){
 	//"-pl 200 200 200 0.6 0.6 0.6 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
@@ -819,12 +779,12 @@ void spheretest_with_two_spheres(){
 
 	//spheres
 	BRDF blue = BRDF(Vector3f(0, 0.05, 0.1), Vector3f(0.11, 0.20, 0.54), Vector3f(0, 1, 1), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere sp = Sphere(Vector3f(-0.6, 0.0, -2.0), 1.0, blue);
-	s.addSphere(sp);
+	Sphere s1 = Sphere(Vector3f(-0.6, 0.0, -2.0), 1.0, blue);
+	s.addShape(&s1);
 
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	sp = Sphere(Vector3f(1, 0.9, -2.4), 1.0, yellow);
-	s.addSphere(sp);
+	Sphere s2 = Sphere(Vector3f(1, 0.9, -2.4), 1.0, yellow);
+	s.addShape(&s2);
 
 	filename = "spheretest_two_spheres.bmp";
 	//render call
@@ -851,15 +811,54 @@ void triangletest_blue_shading(){
 	//triangles
 	BRDF blue = BRDF(Vector3f(0, 0.2, 0.2), Vector3f(0.21, 1, 1), Vector3f(1, 1, 1), Vector3f(0.0, 0.0, 0.0), 16);
 	Triangle triangle = Triangle(Vector3f(0, 1, -1), Vector3f(1, 0, -1), Vector3f(-1, 0, -1), blue);
-	s.addTriangle(triangle);
-	triangle = Triangle(Vector3f(1, 0, -1), Vector3f(1, 1, -2), Vector3f(0, 1, -1), blue);
-	s.addTriangle(triangle);
+	s.addShape(&triangle);
+	Triangle triangle2 = Triangle(Vector3f(1, 0, -1), Vector3f(1, 1, -2), Vector3f(0, 1, -1), blue);
+	s.addShape(&triangle2);
 
-	s.addSphere(Sphere(Vector3f(0, -1, -2), 0.5, blue));
+	s.addShape(&Sphere(Vector3f(0, -1, -2), 0.5, blue));
 
 	filename = "triangletest_blue_shading.bmp";
 	//render call
 	s.render();
+}
+void spheres_shadowtest(){
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 0);
+	Vector3f ul = Vector3f(-1, 1, -3);
+	Vector3f ur = Vector3f(1, 1, -3);
+	Vector3f lr = Vector3f(1, -1, -3);
+	Vector3f ll = Vector3f(-1, -1, -3);
+
+	//scene initializer
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+	//Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, 1);
+
+	//lights
+	Light l1 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027));
+	Light l2 = Light(Color(Vector3f(0, 0, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, 0.57735027, -0.57735027));
+	s.addLight(l1);
+	s.addLight(l2);
+
+	//spheres
+	Sphere s1 = Sphere(Vector3f(0, 0, -20), 3, 
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	Sphere s2 = Sphere(Vector3f(-2, 2, -15), 1, 
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 0), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	Sphere s3 = Sphere(Vector3f(-2, -2, -15), 1, 
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	s.addShape(&s1);
+	s.addShape(&s2);
+	s.addShape(&s3);
+
+	s.addShape(&Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20), 
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50)));
+
+	filename = "shadows.bmp";
+	//render call
+	s.render();
+
+
 }
 
 void loadScene(string file){
@@ -925,8 +924,10 @@ void loadScene(string file){
 				Vector3f ks = Vector3f(atof(line[7].c_str()), atof(line[8].c_str()), atof(line[9].c_str()));
 				Vector3f kd = Vector3f(atof(line[10].c_str()), atof(line[11].c_str()), atof(line[12].c_str()));
 				Vector3f kr = Vector3f(atof(line[13].c_str()), atof(line[14].c_str()), atof(line[15].c_str()));
-				BRDF color = BRDF(ka, ks, kd, kr);
-				s.addSphere(Sphere(Vector3f(atof(line[1].c_str()), atof(line[2].c_str()), atof(line[3].c_str())), atof(line[4].c_str()), color));
+				float sp = atof(line[16].c_str());
+				BRDF color = BRDF(ka, ks, kd, kr, sp);
+				Sphere sph = Sphere(Vector3f(atof(line[1].c_str()), atof(line[2].c_str()), atof(line[3].c_str())), atof(line[4].c_str()), color);
+				s.addShape(&sph);
 			}
 
 			//v x y z
@@ -940,8 +941,10 @@ void loadScene(string file){
 				Vector3f ks = Vector3f(atof(line[7].c_str()), atof(line[8].c_str()), atof(line[9].c_str()));
 				Vector3f kd = Vector3f(atof(line[10].c_str()), atof(line[11].c_str()), atof(line[12].c_str()));
 				Vector3f kr = Vector3f(atof(line[13].c_str()), atof(line[14].c_str()), atof(line[15].c_str()));
-				BRDF color = BRDF(ka, ks, kd, kr);
-				s.addTriangle(Triangle(points[atof(line[1].c_str())], points[atof(line[2].c_str())], points[atof(line[3].c_str())], color));
+				float sp = atof(line[16].c_str());
+				BRDF color = BRDF(ka, ks, kd, kr, sp);
+				Triangle tri = Triangle(points[atof(line[1].c_str())], points[atof(line[2].c_str())], points[atof(line[3].c_str())], color);
+				s.addShape(&tri);
 			}
 
 			//pLight x y z cr cg cb
@@ -957,8 +960,6 @@ void loadScene(string file){
 			}
 		}
 		s.render();
-		pLights.clear();
-		dLights.clear();
 	}
 
 }
@@ -971,9 +972,9 @@ int main(int argc, char *argv[]) {
 	spheretest_viewing_angle1();
 	spheretest_viewing_angle2();
 	triangletest_blue_shading();
-
-	string file(argv[1]);
-	loadScene(file);
+	spheres_shadowtest();
+	//string file(argv[1]);
+	//loadScene(file);
 	return 0;
 }
 
