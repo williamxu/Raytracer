@@ -974,7 +974,7 @@ int main(int argc, char *argv[]) {
 	spheretest_viewing_angle2();
 	triangletest_blue_shading();
 
-	string file (argv[1]);
+	string file(argv[1]);
 	loadScene(file);
 	return 0;
 }
