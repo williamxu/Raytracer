@@ -30,8 +30,7 @@ inline float sqr(float x) { return x*x; }
 //****************************************************
 // Global Variables
 //****************************************************
-vector<Light>	pLights;
-vector<Light>	dLights;
+vector<Light>	lights;
 
 char* filename = "output.bmp";
 
@@ -167,10 +166,10 @@ public:
 	void generateLightRay(LocalGeo local, Ray* lray, Color* lcolor){
 		*lcolor = color;
 		if (l == POINTLIGHT){
-			*lray = Ray(local.position, (pos - local.position).normalized(), 0, (pos - local.position).squaredNorm());
+			*lray = Ray(local.position, (pos - local.position).normalized(), .001, (pos - local.position).squaredNorm());
 		}
 		else if (l == DIRECTIONALLIGHT) {
-			*lray = Ray(local.position, dir, 0, FLT_MAX);
+			*lray = Ray(local.position, dir, .001, FLT_MAX);
 		}
 	}
 };
@@ -283,7 +282,13 @@ public:
 		float B = (2 * d).dot(e - c);
 		float C = (e - c).dot(e - c) - sqr(radius);
 		float disc = sqr(B) - 4 * A*C;
-		return disc >= 0;
+		if (disc >= 0.0) {
+			float x = sqr(d.dot(e - c)) - ((d.dot(d)) * ((e - c).dot(e - c) - sqr(radius)));
+			float t1 = (-d.dot(e - c) - (sqrt(x))) / (d.dot(d));
+			float t2 = (-d.dot(e - c) + (sqrt(x))) / (d.dot(d));
+			return (t1 >= ray.t_min && t1 < ray.t_max && t2 >= ray.t_min && t2 < ray.t_max);
+		}
+		return false;
 	}
 };
 
@@ -554,6 +559,19 @@ public:
 	void addTriangle(Triangle t){
 		triangles.push_back(t);
 	}
+	boolean shadow(Ray ray){
+		for (unsigned int i = 0; i < spheres.size(); i++){
+			if (spheres[i].intersectP(ray)){
+				return true;
+			}
+		}
+		for (unsigned int i = 0; i < triangles.size(); i++){
+			if (triangles[i].intersectP(ray)){
+				return true;
+			}
+		}
+		return false;
+	}
 	void trace(Ray& ray, int depth, Color* color) {
 		Color c = Color();
 		float thit = 0;
@@ -569,18 +587,12 @@ public:
 				Ray lightray;
 				Color lightColor;
 				c = c + b.ambient();
-				for (unsigned int i = 0; i < pLights.size(); i++){	// loop through all light sources
-					pLights[0].generateLightRay(lg, &lightray, &lightColor);
-					//if (!sphere.intersectP(lightray)){
-					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-				}
-				for (unsigned int i = 0; i < dLights.size(); i++){	// loop through all light sources
-					dLights[i].generateLightRay(lg, &lightray, &lightColor);
-					//if (!spheres[si].intersectP(lightray)){
-					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-					//}
+				for (unsigned int i = 0; i < lights.size(); i++){	// loop through all light sources
+					lights[0].generateLightRay(lg, &lightray, &lightColor);
+					if (!shadow(lightray)){
+						c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+						c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
+					}
 				}
 			}
 		}
@@ -590,20 +602,13 @@ public:
 				Ray lightray;
 				Color lightColor;
 				c = c + b.ambient();
-				for (unsigned int i = 0; i < pLights.size(); i++){	// loop through all light sources
-					pLights[0].generateLightRay(lg, &lightray, &lightColor);
-
-					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-				}
-				for (unsigned int i = 0; i < dLights.size(); i++){	// loop through all light sources
-					dLights[i].generateLightRay(lg, &lightray, &lightColor);
-
-					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-
-				}
-			}
+				for (unsigned int i = 0; i < lights.size(); i++){	// loop through all light sources
+					lights[0].generateLightRay(lg, &lightray, &lightColor);
+					if (!shadow(lightray)){
+						c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
+						c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
+					}
+				}			}
 		}
 		*color = c;
 
@@ -670,12 +675,7 @@ public:
 		raytracer.addSphere(s);
 	}
 	void addLight(Light light){
-		if (light.l == POINTLIGHT){
-			pLights.push_back(light);
-		}
-		else if (light.l == DIRECTIONALLIGHT){
-			dLights.push_back(light);
-		}
+		lights.push_back(light);
 	}
 
 	void addTriangle(Triangle t){
@@ -720,8 +720,7 @@ void spheretest_yellow_shading(){
 	filename = "spheretest_yellow_shading.bmp";
 	//render call
 	s.render();
-	pLights.clear();
-	dLights.clear();
+	lights.clear();
 }
 void spheretest_viewing_angle1(){
 	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
@@ -747,8 +746,7 @@ void spheretest_viewing_angle1(){
 	filename = "spheretest_view1.bmp";
 	//render call
 	s.render();
-	pLights.clear();
-	dLights.clear();
+	lights.clear();
 }
 void spheretest_viewing_angle2(){
 	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
@@ -774,8 +772,7 @@ void spheretest_viewing_angle2(){
 	filename = "spheretest_view2.bmp";
 	//render call
 	s.render();
-	pLights.clear();
-	dLights.clear();
+	lights.clear(); 
 }
 void spheretest_with_two_lights(){
 	//"-pl 200 200 200 0.6 0.6 0.6 -dl 0 1 -1 0 0.4 0.4 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
@@ -802,8 +799,7 @@ void spheretest_with_two_lights(){
 	filename = "spheretest_pt_dir.bmp";
 	//render call
 	s.render();
-	pLights.clear();
-	dLights.clear();
+	lights.clear();
 }
 void spheretest_with_two_spheres(){
 	//"-pl 200 200 200 0.6 0.6 0.6 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
@@ -833,8 +829,7 @@ void spheretest_with_two_spheres(){
 	filename = "spheretest_two_spheres.bmp";
 	//render call
 	s.render();
-	pLights.clear();
-	dLights.clear();
+	lights.clear();
 }
 
 void triangletest_blue_shading(){
@@ -866,8 +861,7 @@ void triangletest_blue_shading(){
 	filename = "triangletest_blue_shading.bmp";
 	//render call
 	s.render();
-	pLights.clear();
-	dLights.clear();
+	lights.clear();
 }
 
 void loadScene(string file){
