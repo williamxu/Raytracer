@@ -32,7 +32,7 @@ inline float sqr(float x) { return x*x; }
 //****************************************************
 vector<Light>	pLights;
 vector<Light>	dLights;
-float specularCoefficient = 16; //0
+
 char* filename = "output.bmp";
 
 //****************************************************
@@ -180,6 +180,7 @@ class BRDF{
 	Color kd;
 	Color ks;
 	Vector3f kr; //reflection coefficient
+	float sp;
 
 public:
 	BRDF(){
@@ -187,12 +188,14 @@ public:
 		kd = Color(Vector3f(0, 0, 0));
 		ks = Color(Vector3f(0, 0, 0));
 		kr = Vector3f(0, 0, 0);
+		sp = 0.0;
 	}
-	BRDF(Vector3f ambient, Vector3f diffuse, Vector3f specular, Vector3f reflection){
+	BRDF(Vector3f ambient, Vector3f diffuse, Vector3f specular, Vector3f reflection, float spec){
 		ka = Color(ambient);
 		kd = Color(diffuse);
 		ks = Color(specular);
 		kr = reflection;
+		sp = spec;
 	}
 	Color ambient(){
 		return ka;
@@ -205,6 +208,9 @@ public:
 	Color specular(Vector3f normal, Vector3f lightVector, Color lightColor, float power) {
 		Vector3f reflect = (-lightVector + 2 * lightVector.dot(normal) * normal).normalized();
 		return ks * lightColor * pow(max(reflect.dot(Vector3f(0.0, 0.0, 1.0)), 0), power);
+	}
+	float specularCoefficient(){
+		return sp;
 	}
 };
 
@@ -552,7 +558,7 @@ public:
 		Color c = Color();
 		float thit = 0;
 		LocalGeo lg = LocalGeo();
-		
+
 		if (depth <= 0){
 			*color = c; //Make the color black and return
 			return;
@@ -567,16 +573,16 @@ public:
 					pLights[0].generateLightRay(lg, &lightray, &lightColor);
 					//if (!sphere.intersectP(lightray)){
 					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
 				}
 				for (unsigned int i = 0; i < dLights.size(); i++){	// loop through all light sources
 					dLights[i].generateLightRay(lg, &lightray, &lightColor);
 					//if (!spheres[si].intersectP(lightray)){
 					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
 					//}
 				}
-			}			
+			}
 		}
 		for (unsigned int ti = 0; ti < triangles.size(); ti++){
 			if (triangles[ti].intersect(ray, &thit, &lg)){
@@ -586,16 +592,16 @@ public:
 				c = c + b.ambient();
 				for (unsigned int i = 0; i < pLights.size(); i++){	// loop through all light sources
 					pLights[0].generateLightRay(lg, &lightray, &lightColor);
-					
+
 					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
 				}
 				for (unsigned int i = 0; i < dLights.size(); i++){	// loop through all light sources
 					dLights[i].generateLightRay(lg, &lightray, &lightColor);
-					
+
 					c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, specularCoefficient);
-					
+					c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
+
 				}
 			}
 		}
@@ -707,7 +713,7 @@ void spheretest_yellow_shading(){
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
 
 	//spheres
-	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1,1,0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
 	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
 	s.addSphere(sp);
 
@@ -734,8 +740,8 @@ void spheretest_viewing_angle1(){
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
 
 	//spheres
-	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
-	Sphere sp = Sphere(Vector3f(-1,1,-2), 1.0, yellow);
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
+	Sphere sp = Sphere(Vector3f(-1, 1, -2), 1.0, yellow);
 	s.addSphere(sp);
 
 	filename = "spheretest_view1.bmp";
@@ -761,7 +767,7 @@ void spheretest_viewing_angle2(){
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
 
 	//spheres
-	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
 	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
 	s.addSphere(sp);
 
@@ -789,7 +795,7 @@ void spheretest_with_two_lights(){
 	s.addLight(Light(Color(Vector3f(0, 0.4, 0.4)), DIRECTIONALLIGHT, Vector3f(0, 1, -1)));
 
 	//spheres
-	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
 	Sphere sp = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
 	s.addSphere(sp);
 
@@ -816,11 +822,11 @@ void spheretest_with_two_spheres(){
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
 
 	//spheres
-	BRDF blue = BRDF(Vector3f(0, 0.05, 0.1), Vector3f(0.11, 0.20, 0.54), Vector3f(0,1,1), Vector3f(0.0, 0.0, 0.0));
+	BRDF blue = BRDF(Vector3f(0, 0.05, 0.1), Vector3f(0.11, 0.20, 0.54), Vector3f(0, 1, 1), Vector3f(0.0, 0.0, 0.0), 16);
 	Sphere sp = Sphere(Vector3f(-0.6, 0.0, -2.0), 1.0, blue);
 	s.addSphere(sp);
 
-	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0));
+	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
 	sp = Sphere(Vector3f(1, 0.9, -2.4), 1.0, yellow);
 	s.addSphere(sp);
 
@@ -849,7 +855,7 @@ void triangletest_blue_shading(){
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
 
 	//triangles
-	BRDF blue = BRDF(Vector3f(0, 0.2, 0.2), Vector3f(0.21, 1, 1), Vector3f(1, 1, 1), Vector3f(0.0, 0.0, 0.0));
+	BRDF blue = BRDF(Vector3f(0, 0.2, 0.2), Vector3f(0.21, 1, 1), Vector3f(1, 1, 1), Vector3f(0.0, 0.0, 0.0), 16);
 	Triangle triangle = Triangle(Vector3f(0, 1, -1), Vector3f(1, 0, -1), Vector3f(-1, 0, -1), blue);
 	s.addTriangle(triangle);
 	triangle = Triangle(Vector3f(1, 0, -1), Vector3f(1, 1, -2), Vector3f(0, 1, -1), blue);
