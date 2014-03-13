@@ -36,7 +36,6 @@ char* filename = "output.bmp";
 // Some Classes
 //****************************************************
 
-
 class Normal {
 public:
 	Vector3f xyz;
@@ -354,61 +353,109 @@ public:
 	}
 };
 
-//Primitive will transform the ray from world space to object space
-//and hand it to Shape to do intersection in object space.
-//Shape then computes the intersection and returns the result to Primitive.
-//
-//class Primitive{
-//public:
-//	//Abstract class for primitives in the scene
-//	virtual bool intersect(Ray& ray, float* thit, Intersection* in) = 0;
-//	virtual void getBRDF(LocalGeo& local, BRDF* brdf) = 0;
-//	//Primitive will transform the ray from world space to object space
-//	//and hand it to Shape to do intersection in object space.
-//};
-//
-//class GeometricPrimitive : Primitive{
-//public:
-//	//Transformation objToWorld, worldToObj;
-//	Shape* shape;
-//	
-//	bool intersect(Ray& ray, float* thit, Intersection* in)  {
-//		//Ray oray = worldToObj * ray;
-//		//LocalGeo olocal;
-//		//if (!shape->intersect(oray, thit, &olocal))  return false;
-//		//in->primitive = this;
-//		//in->localGeo = objToWorld * olocal;
-//		return true;
-//	}
-//	void getBRDF(LocalGeo& local, BRDF* brdf) {
-//		*brdf = shape->brdf;
-//	}
-//};
-//
-//class AggregatePrimitive{
-//	AggregatePrimitive(vector<Primitive*> list);
-//	bool intersect(Ray& ray, float* thit, Intersection* in);
-//	bool intersectP(Ray& ray);
-//	void getBRDF(LocalGeo& local, BRDF* brdf) {
-//		exit(1);
-//		// This should never get called, because in->primitive will
-//		// never be an aggregate primitive
-//	}
-//
-////Notes:
-////	Constructor store the STL vector of pointers to primitives.
-////		Intersect just loops through all the primitives in the list and
-////		call the intersect routine.Compare thit and return that of the nearest one(because we want the first hit).
-////		Also, the in->primitive should be set to the pointer to that primitive.
-////		When you implement acceleration structure, it will replace this class.
-//};
+class Primitive{
+public:
+	Shape* shape;
+	//Abstract class for primitives in the scene
+	virtual bool intersect(Ray ray, float* thit, Intersection* in) = 0;
+	virtual bool intersectP(Ray ray) = 0;
+	virtual void getBRDF(LocalGeo local, BRDF* brdf) = 0;
+	//Primitive will transform the ray from world space to object space
+	//and hand it to Shape to do intersection in object space.
+};
 
+class Intersection{
+public:
+	LocalGeo localGeo;
+	Primitive* primitive;
+	Intersection(){
+		localGeo = LocalGeo();
+	}
+	Intersection(LocalGeo l, Primitive* p){
+		localGeo = l;
+		primitive = p;
+	}
+};
 
-//class Intersection{
-//public:
-//	LocalGeo localGeo;
-//	Primitive* primitive;
-//};
+class GeometricPrimitive : public Primitive{
+public:
+
+	//Transformation objToWorld, worldToObj;
+	GeometricPrimitive(){
+
+	}
+
+	GeometricPrimitive(Shape* s){
+		shape = s;
+	}
+
+	bool intersect(Ray ray, float* thit, Intersection* in)  {
+		Ray oray = ray;
+		LocalGeo olocal = LocalGeo();
+		if (!shape->intersect(oray, thit, &olocal))  return false;
+		in->primitive = this;
+		in->localGeo = olocal;
+		return true;
+	}
+
+	bool intersectP(Ray ray)  {
+		return shape->intersectP(ray);
+	}
+	void getBRDF(LocalGeo local, BRDF* brdf) {
+		*brdf = shape->brdf;
+	}
+};
+
+class AggregatePrimitive : public Primitive{
+
+	vector<Primitive*> primitives;
+public:
+	AggregatePrimitive(){
+		primitives = vector<Primitive*>();
+	}
+
+	AggregatePrimitive(vector<Primitive*> list){
+		primitives = list;
+	}
+
+	bool intersect(Ray ray, float* thit, Intersection* in){
+		//Intersect just loops through all the primitives in the list and
+		//	call the intersect routine.Compare thit and return that of the nearest one(because we want the first hit).
+		//	Also, the in->primitive should be set to the pointer to that primitive.
+		bool hit = false;
+		float nearestT = FLT_MAX;
+		*thit = FLT_MAX;
+		Intersection nearestI = Intersection();
+		for (Primitive* p : primitives){
+			if (p->intersect(ray, &nearestT, &nearestI)){
+				hit = true;
+				if (nearestT < *thit){
+					*thit = nearestT;
+					*in = nearestI;
+				}
+			}
+		}
+		return hit;
+	}
+	
+	bool intersectP(Ray ray){
+		for (Primitive* element : primitives){
+			if (element->intersectP(ray)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void getBRDF(LocalGeo local, BRDF* brdf) {
+		cout << "Invalid call getBRDF of AggregatePrimitive" << endl;
+		exit(1);
+	}
+	void addPrimitive(Primitive* p){
+		primitives.push_back(p);
+	}
+};
+
 
 class Sample{
 public:
@@ -533,66 +580,70 @@ public:
 };
 
 class RayTracer{
-public:
 	vector<Light> lights;
-	vector<Shape*> shapes;
-
-
+	AggregatePrimitive primitives;
+public:
 	RayTracer(){
-
-	}
-	void addShape(Shape* s){
-		shapes.push_back(s);
+		primitives = AggregatePrimitive();
+		lights = vector<Light>();
 	}
 
+	RayTracer(vector<Light> l, vector<Primitive*> p){
+		primitives = AggregatePrimitive(p);
+		lights = l;
+	}
 	void addLight(Light l){
 		lights.push_back(l);
 	}
+	void addPrimitive(Primitive* p){
+		primitives.addPrimitive(p);
+	}
+
 	boolean shadow(Ray ray){
-		for (Shape* s : shapes){
-			if (s->intersectP(ray)){
-				return true;
-			}
-		}
-		return false;
+		return primitives.intersectP(ray);
+		//for (Shape* s : shapes){
+		//	if (s->intersectP(ray)){
+		//		return true;
+		//	}
+		//}
+		//return false;
 	}
 	void trace(Ray& ray, int depth, Color* color) {
 		Color c = Color();
 		float thit = 0;
-		LocalGeo lg = LocalGeo();
+		Intersection in = Intersection();
 
 		if (depth <= 0){
 			*color = c; //Make the color black and return
 			return;
 		}
-		for (Shape* s : shapes){
-			if (s->intersect(ray, &thit, &lg)){
-				BRDF b = s->brdf;
-				Ray lightray;
-				Color lightColor;
-				c = c + b.ambient();
-				for (Light l : lights){
-					l.generateLightRay(lg, &lightray, &lightColor);
-					if (!shadow(lightray)){
-						c = c + b.diffuse(lg.normal.xyz, lightray.direction, lightColor);
-						c = c + b.specular(lg.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-					}
+		if (primitives.intersect(ray, &thit, &in)){
+			BRDF b;
+			in.primitive->getBRDF(in.localGeo, &b);
+			Ray lightray;
+			Color lightColor;
+			c = c + b.ambient();
+			for (Light l : lights){
+				l.generateLightRay(in.localGeo, &lightray, &lightColor);
+				if (!shadow(lightray)){
+					c = c + b.diffuse(in.localGeo.normal.xyz, lightray.direction, lightColor);
+					c = c + b.specular(in.localGeo.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
 				}
-
 			}
-			*color = c;
 		}
-
-		// Handle mirror reflection
-		//if (brdf.kr > 0) {
-		//reflectRay = createReflectRay(in.local, ray);
-
-		// Make a recursive call to trace the reflected ray
-		//trace(reflectRay, depth + 1, &tempColor);
-		//*color += brdf.kr * tempColor;
-		//}
-
+		
+		*color = c;
 	}
+
+	// Handle mirror reflection
+	//if (brdf.kr > 0) {
+	//reflectRay = createReflectRay(in.local, ray);
+
+	// Make a recursive call to trace the reflected ray
+	//trace(reflectRay, depth + 1, &tempColor);
+	//*color += brdf.kr * tempColor;
+	//}
+
 	//		Beware when you generate reflection ray, make sure the ray don’t start
 	//		exactly on the surface, or the intersection routine may return
 	//		intersection point at the starting point of the ray. (This apply to light
@@ -640,12 +691,12 @@ public:
 		film = Film(dx, dy);
 	}
 
-	
+
 	void addLight(Light light){
 		raytracer.addLight(light);
 	}
-	void addShape(Shape* s){
-		raytracer.addShape(s);
+	void addPrimitive(Primitive* p){
+		raytracer.addPrimitive(p);
 	}
 
 	void render() {
@@ -680,7 +731,9 @@ void spheretest_yellow_shading(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	s.addShape(&Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow));
+	Sphere yellowSphere = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
+	Primitive* sphere = (Primitive*)(&GeometricPrimitive(&yellowSphere));
+	s.addPrimitive(sphere);
 
 	filename = "spheretest_yellow_shading.bmp";
 	//render call
@@ -704,7 +757,11 @@ void spheretest_viewing_angle1(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	s.addShape(&Sphere(Vector3f(-1, 1, -2), 1.0, yellow));
+	s.addPrimitive((Primitive*)(
+		&GeometricPrimitive(
+		&Sphere(Vector3f(-1, 1, -2), 1.0, yellow))
+		)
+		);
 
 	filename = "spheretest_view1.bmp";
 	//render call
@@ -729,7 +786,9 @@ void spheretest_viewing_angle2(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	s.addShape(&Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow));
+	Sphere yellowSphere = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
+	Primitive* sphere = (Primitive*)(&GeometricPrimitive(&yellowSphere));
+	s.addPrimitive(sphere);
 
 	filename = "spheretest_view2.bmp";
 	//render call
@@ -754,7 +813,9 @@ void spheretest_with_two_lights(){
 
 	//spheres
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	s.addShape(&Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow));
+	Sphere yellowSphere = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, yellow);
+	Primitive* sphere = (Primitive*)(&GeometricPrimitive(&yellowSphere));
+	s.addPrimitive(sphere);
 
 	filename = "spheretest_pt_dir.bmp";
 	//render call
@@ -762,6 +823,8 @@ void spheretest_with_two_lights(){
 
 }
 void spheretest_with_two_spheres(){
+	//TODO fix this test
+	
 	//"-pl 200 200 200 0.6 0.6 0.6 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
 
 	//camera and image plane
@@ -778,13 +841,19 @@ void spheretest_with_two_spheres(){
 	s.addLight(Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)));
 
 	//spheres
+
 	BRDF blue = BRDF(Vector3f(0, 0.05, 0.1), Vector3f(0.11, 0.20, 0.54), Vector3f(0, 1, 1), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere s1 = Sphere(Vector3f(-0.6, 0.0, -2.0), 1.0, blue);
-	s.addShape(&s1);
+	Sphere blueSphere = Sphere(Vector3f(0.0, 0.0, -2.0), 1.0, blue);
 
 	BRDF yellow = BRDF(Vector3f(0.1, 0.1, 0), Vector3f(1, 1, 0), Vector3f(0.8, 0.8, 0.8), Vector3f(0.0, 0.0, 0.0), 16);
-	Sphere s2 = Sphere(Vector3f(1, 0.9, -2.4), 1.0, yellow);
-	s.addShape(&s2);
+	Sphere yellowSphere = Sphere(Vector3f(1, 0.9, -2.4), 1.0, yellow);
+
+	s.addPrimitive(
+		(Primitive*)(&GeometricPrimitive(&blueSphere))
+		);
+	s.addPrimitive(
+		(Primitive*)(&GeometricPrimitive(&yellowSphere))
+		);
 
 	filename = "spheretest_two_spheres.bmp";
 	//render call
@@ -810,12 +879,24 @@ void triangletest_blue_shading(){
 
 	//triangles
 	BRDF blue = BRDF(Vector3f(0, 0.2, 0.2), Vector3f(0.21, 1, 1), Vector3f(1, 1, 1), Vector3f(0.0, 0.0, 0.0), 16);
-	Triangle triangle = Triangle(Vector3f(0, 1, -1), Vector3f(1, 0, -1), Vector3f(-1, 0, -1), blue);
-	s.addShape(&triangle);
-	Triangle triangle2 = Triangle(Vector3f(1, 0, -1), Vector3f(1, 1, -2), Vector3f(0, 1, -1), blue);
-	s.addShape(&triangle2);
 
-	s.addShape(&Sphere(Vector3f(0, -1, -2), 0.5, blue));
+	Triangle t1 = Triangle(
+		Vector3f(0, 1, -1), Vector3f(1, 0, -1), Vector3f(-1, 0, -1), blue);
+
+	Triangle t2 = Triangle(
+		Vector3f(1, 0, -1), Vector3f(1, 1, -2), Vector3f(0, 1, -1), blue);
+	
+	Sphere s1 = Sphere(Vector3f(0, -1, -2), 0.5, blue);
+	s.addPrimitive((Primitive*)(
+		&GeometricPrimitive(
+		&t1)));
+
+	s.addPrimitive((Primitive*)(
+		&GeometricPrimitive(
+		&t2)));
+	s.addPrimitive((Primitive*)(
+		&GeometricPrimitive(
+		&s1)));
 
 	filename = "triangletest_blue_shading.bmp";
 	//render call
@@ -837,22 +918,22 @@ void spheres_shadowtest(){
 	//lights
 	Light l1 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027));
 	Light l2 = Light(Color(Vector3f(0, 0, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, 0.57735027, -0.57735027));
-	s.addLight(l1);
-	s.addLight(l2);
 
-	//spheres
-	Sphere s1 = Sphere(Vector3f(0, 0, -20), 3, 
-		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
-	Sphere s2 = Sphere(Vector3f(-2, 2, -15), 1, 
-		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 0), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
-	Sphere s3 = Sphere(Vector3f(-2, -2, -15), 1, 
-		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
-	s.addShape(&s1);
-	s.addShape(&s2);
-	s.addShape(&s3);
+	//primitives
+	Sphere s1 = Sphere(Vector3f(0, 0, -20), 3, BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	GeometricPrimitive g1 = GeometricPrimitive(&s1);
+	Sphere s2 = Sphere(Vector3f(-2, 2, -15), 1, BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 0), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	GeometricPrimitive g2 = GeometricPrimitive(&s2);
+	Sphere s3 = Sphere(Vector3f(-2, -2, -15), 1, BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	GeometricPrimitive g3 = GeometricPrimitive(&s3);
+	Triangle t1 = Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20), BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	GeometricPrimitive g4 = GeometricPrimitive(&t1);
 
-	s.addShape(&Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20), 
-		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50)));
+	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4)};
+	vector<Light> lights = vector<Light> {l1, l2};
+	s.raytracer = RayTracer(lights, pr);
+	
+
 
 	filename = "shadows.bmp";
 	//render call
@@ -927,7 +1008,9 @@ void loadScene(string file){
 				float sp = atof(line[16].c_str());
 				BRDF color = BRDF(ka, ks, kd, kr, sp);
 				Sphere sph = Sphere(Vector3f(atof(line[1].c_str()), atof(line[2].c_str()), atof(line[3].c_str())), atof(line[4].c_str()), color);
-				s.addShape(&sph);
+				s.addPrimitive(
+					(Primitive*)(&GeometricPrimitive(&sph))
+					);
 			}
 
 			//v x y z
@@ -944,7 +1027,9 @@ void loadScene(string file){
 				float sp = atof(line[16].c_str());
 				BRDF color = BRDF(ka, ks, kd, kr, sp);
 				Triangle tri = Triangle(points[atof(line[1].c_str())], points[atof(line[2].c_str())], points[atof(line[3].c_str())], color);
-				s.addShape(&tri);
+				s.addPrimitive(
+					(Primitive*)(&GeometricPrimitive(&tri))
+					);
 			}
 
 			//pLight x y z cr cg cb
