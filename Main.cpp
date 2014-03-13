@@ -30,7 +30,7 @@ void spheretest_yellow_shading(){
 
 	filename = "spheretest_yellow_shading.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 }
 void spheretest_viewing_angle1(){
 	//-pl 200 200 200 0.6 0.6 0.6 - kd 1 1 0 - ka 0.1 0.1 0 - ks 0.8 0.8 0.8 - sp 16
@@ -58,7 +58,7 @@ void spheretest_viewing_angle1(){
 
 	filename = "spheretest_view1.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 
 }
 void spheretest_viewing_angle2(){
@@ -85,7 +85,7 @@ void spheretest_viewing_angle2(){
 
 	filename = "spheretest_view2.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 }
 void spheretest_with_two_lights(){
 	//"-pl 200 200 200 0.6 0.6 0.6 -dl 0 1 -1 0 0.4 0.4 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
@@ -112,7 +112,7 @@ void spheretest_with_two_lights(){
 
 	filename = "spheretest_pt_dir.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 
 }
 void spheretest_with_two_spheres(){
@@ -150,7 +150,7 @@ void spheretest_with_two_spheres(){
 
 	filename = "spheretest_two_spheres.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 }
 void triangletest_blue_shading(){
 	//"-pl 200 200 200 0.6 0.6 0.6 -kd 1 1 0 -ka 0.1 0.1 0 -ks 0.8 0.8 0.8 -sp 16"
@@ -192,7 +192,7 @@ void triangletest_blue_shading(){
 
 	filename = "triangletest_blue_shading.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 }
 void spheres_shadowtest(){
 
@@ -225,11 +225,9 @@ void spheres_shadowtest(){
 	vector<Light> lights = vector<Light> {l1, l2};
 	s.raytracer = RayTracer(lights, pr);
 
-
-
 	filename = "shadows.bmp";
 	//render call
-	s.render();
+	s.render(filename);
 
 
 }
@@ -336,19 +334,19 @@ void loadScene(string file){
 				s.addLight(Light(color, DIRECTIONALLIGHT, Vector3f(atof(line[1].c_str()), atof(line[2].c_str()), atof(line[3].c_str()))));
 			}
 		}
-		s.render();
+		s.render(filename);
 	}
 
 }
 
 int main(int argc, char *argv[]) {
 
-	//spheretest_yellow_shading();
-	//spheretest_with_two_lights();
-	//spheretest_with_two_spheres();
-	//spheretest_viewing_angle1();
-	//spheretest_viewing_angle2();
-	//triangletest_blue_shading();
+	spheretest_yellow_shading();
+	spheretest_with_two_lights();
+	spheretest_with_two_spheres();
+	spheretest_viewing_angle1();
+	spheretest_viewing_angle2();
+	triangletest_blue_shading();
 	spheres_shadowtest();
 	//string file(argv[1]);
 	//loadScene(file);

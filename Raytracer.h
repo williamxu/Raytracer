@@ -1,14 +1,26 @@
+#ifndef BASIC
+#define BASIC
+#include "Basics.h"
+#endif
+
+#ifndef SHAPE
+#define SHAPE
+#include "Shape.h"
+#endif
+
+#ifndef PRIMITIVE
+#define PRIMITIVE
+#include "Primitive.h"
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 #include "FreeImage/FreeImage.h"
 
-#include "Basics.h"
-#include "Shape.h"
-#include "Primitive.h"
-
 using namespace Eigen;
+//global
 
 class Sample{
 public:
@@ -21,7 +33,7 @@ public:
 class Sampler{
 public:
 	int dx, dy; //dimension of our output
-	int curr_x, curr_y;
+	int curr_x = 0, curr_y = 0;
 	Sampler();
 	Sampler(int x, int y);
 	bool generateSample(Sample* sample);
@@ -60,7 +72,7 @@ public:
 	RayTracer(vector<Light> l, vector<Primitive*> p);
 	void addLight(Light l);
 	void addPrimitive(Primitive* p);
-	boolean shadow(Ray ray);
+	bool shadow(Ray ray);
 	void trace(Ray& ray, int depth, Color* color);
 };
 
@@ -70,13 +82,14 @@ public:
 	Vector3f LL, LR, UL, UR;
 	float dx, dy;
 	int recursionDepth;
-	Sampler sampler;
-	Camera camera;
-	RayTracer raytracer;
-	Film film;
+	Sampler sampler = Sampler();
+	Camera camera = Camera();
+	RayTracer raytracer = RayTracer();
+	Film film = Film();
+
 	Scene();
 	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth);
 	void addLight(Light light);
 	void addPrimitive(Primitive* p);
-	void render();
+	void render(char* filename);
 };

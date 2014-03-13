@@ -1,8 +1,14 @@
+#ifndef BASIC
+#define BASIC
+#include "Basics.h"
+#endif
+
 class Shape{
 public:
 	BRDF brdf;
-	virtual bool intersect(Ray& ray, float* thit, LocalGeo* local);
-	virtual bool intersectP(Ray& ray);
+	virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
+	virtual bool intersectP(Ray& ray) = 0;
+
 };
 
 class Sphere : public Shape{
