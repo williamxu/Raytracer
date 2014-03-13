@@ -44,8 +44,8 @@ bool Sphere::intersectP(Ray& ray) {
 }
 Triangle::Triangle(){
 	p1 = Vector3f(0, 0, 0);
-	p2 = Vector3f(0, 0, 0);
-	p3 = Vector3f(0, 0, 0);
+	p2 = Vector3f(1, 0, 0);
+	p3 = Vector3f(0, 1, 0);
 }
 Triangle::Triangle(Vector3f P1, Vector3f P2, Vector3f P3, BRDF color){
 	p1 = P1;
@@ -86,17 +86,23 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 		float a = p1.x() - p2.x();
 		float b = p1.y() - p2.y();
 		float c = p1.z() - p2.z();
+
 		float d = p1.x() - p3.x();
 		float e = p1.y() - p3.y();
 		float f = p1.z() - p3.z();
+		
 		float g = ray.direction.x();
 		float h = ray.direction.y();
 		float i = ray.direction.z();
+		
 		float j = p1.x() - ray.point.x();
 		float k = p1.y() - ray.point.y();
 		float l = p1.z() - ray.point.z();
+		
 		float M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
+		
 		float t = -(f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
+		
 		*thit = t;
 		Vector3f p = ray.atTime(t);
 		Vector3f norm = (p2 - p1).cross(p3 - p1);

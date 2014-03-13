@@ -85,28 +85,29 @@ BRDF::BRDF(){
 	ka = Color(Vector3f(0, 0, 0));
 	kd = Color(Vector3f(0, 0, 0));
 	ks = Color(Vector3f(0, 0, 0));
-	kr = Vector3f(0, 0, 0);
+	kr = Color(Vector3f(0, 0, 0));
 	sp = 0.0;
 }
 BRDF::BRDF(Vector3f ambient, Vector3f diffuse, Vector3f specular, Vector3f reflection, float spec){
 	ka = Color(ambient);
 	kd = Color(diffuse);
 	ks = Color(specular);
-	kr = reflection;
+	kr = Color(reflection);
 	sp = spec;
 }
 Color BRDF::ambient(){
 	return ka;
 }
 
-Color BRDF::diffuse(Vector3f n, Vector3f l, Color lightColor) {
-	return kd * lightColor * max(n.dot(l), 0);
+Color BRDF::diffuse(Vector3f normal, Vector3f lightVector, Color lightColor) {
+	return kd * lightColor * max(normal.dot(lightVector), 0);
 }
 
-Color BRDF::specular(Vector3f n, Vector3f l, Color lightColor, float power) {
-	Vector3f reflect = (-l + 2 * l.dot(n) * n).normalized();
-	return ks * lightColor * pow(max(reflect.dot(Vector3f(0.0, 0.0, 1.0)), 0), power);
+Color BRDF::specular(Vector3f eye, Vector3f normal, Vector3f lightVector, Color lightColor, float power) {
+	Vector3f reflect = (-lightVector + 2 * lightVector.dot(normal) * normal).normalized();
+	return ks * lightColor * pow(max(eye.dot(reflect), 0), power);
 }
+
 float BRDF::specularCoefficient(){
 	return sp;
 }

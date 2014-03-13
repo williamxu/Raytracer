@@ -66,17 +66,17 @@ public:
 };
 
 class BRDF{
+public:
 	Color ka;
 	Color kd;
 	Color ks;
-	Vector3f kr; //reflection coefficient
+	Color kr; //reflection coefficient
 	float sp;
-public:
 	BRDF();
 	BRDF(Vector3f ambient, Vector3f diffuse, Vector3f specular, Vector3f reflection, float spec);
 	Color ambient();
 	Color diffuse(Vector3f normal, Vector3f lightVector, Color lightColor);
-	Color specular(Vector3f normal, Vector3f lightVector, Color lightColor, float power);
+	Color specular(Vector3f eye, Vector3f normal, Vector3f lightVector, Color lightColor, float power);
 	float specularCoefficient();
 };
 

@@ -67,13 +67,15 @@ public:
 class RayTracer{
 	vector<Light> lights;
 	AggregatePrimitive primitives;
+	int recursionDepth;
 public:
 	RayTracer();
-	RayTracer(vector<Light> l, vector<Primitive*> p);
+	RayTracer(vector<Light> l, vector<Primitive*> p, int depth);
 	void addLight(Light l);
 	void addPrimitive(Primitive* p);
 	bool shadow(Ray ray);
-	void trace(Ray& ray, int depth, Color* color);
+	void trace(Ray ray, int depth, Color* color);
+	Ray createReflectRay(LocalGeo lg, Ray ray);
 };
 
 class Scene{

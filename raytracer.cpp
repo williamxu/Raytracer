@@ -99,9 +99,10 @@ RayTracer::RayTracer(){
 	primitives = AggregatePrimitive();
 	lights = vector<Light>();
 }
-RayTracer::RayTracer(vector<Light> l, vector<Primitive*> p){
+RayTracer::RayTracer(vector<Light> l, vector<Primitive*> p, int depth){
 	primitives = AggregatePrimitive(p);
 	lights = l;
+	recursionDepth = depth;
 }
 void RayTracer::addLight(Light l){
 	lights.push_back(l);
@@ -113,45 +114,48 @@ void RayTracer::addPrimitive(Primitive* p){
 bool RayTracer::shadow(Ray ray){
 	return primitives.intersectP(ray);
 }
-void RayTracer::trace(Ray& ray, int depth, Color* color) {
+void RayTracer::trace(Ray ray, int depth, Color* color) {
 	Color c = Color();
 	float thit = 0;
 	Intersection in = Intersection();
 
-	if (depth <= 0){
+	if (depth < 0){
 		*color = c; //Make the color black and return
 		return;
 	}
-	if (primitives.intersect(ray, &thit, &in)){
-		BRDF b;
-		in.primitive->getBRDF(in.localGeo, &b);
-		Ray lightray;
-		Color lightColor;
-		c = c + b.ambient();
-		for (Light l : lights){
-			l.generateLightRay(in.localGeo, &lightray, &lightColor);
-			if (!shadow(lightray)){
-				c = c + b.diffuse(in.localGeo.normal.xyz, lightray.direction, lightColor);
-				c = c + b.specular(in.localGeo.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
-			}
+	if (!primitives.intersect(ray, &thit, &in)){
+		*color = c;
+		return;
+	}
+	BRDF b;
+	in.primitive->getBRDF(in.localGeo, &b);
+	Ray lightray;
+	Color lightColor;
+	if (depth == recursionDepth) c = c + b.ambient();
+	for (Light l : lights){
+		l.generateLightRay(in.localGeo, &lightray, &lightColor);
+		if (!shadow(lightray)){
+			c = c + b.diffuse(in.localGeo.normal.xyz, lightray.direction, lightColor);
+			c = c + b.specular(-(ray.direction.normalized()), in.localGeo.normal.xyz, lightray.direction, lightColor, b.specularCoefficient());
 		}
+	}
+	// Handle mirror reflection
+	if (!b.kr.rgb.isZero()) {
+		Ray reflectRay = createReflectRay(in.localGeo, ray);
+		Color tempColor = Color();
+		// Make a recursive call to trace the reflected ray
+		trace(reflectRay, depth - 1, &tempColor);
+		c = c + tempColor * b.kr;
 	}
 
 	*color = c;
-	// Handle mirror reflection
-	//if (brdf.kr > 0) {
-	//reflectRay = createReflectRay(in.local, ray);
-
-	// Make a recursive call to trace the reflected ray
-	//trace(reflectRay, depth + 1, &tempColor);
-	//*color += brdf.kr * tempColor;
-	//}
-
-	//		Beware when you generate reflection ray, make sure the ray don’t start
-	//		exactly on the surface, or the intersection routine may return
-	//		intersection point at the starting point of the ray. (This apply to light
-	//		ray generation as well)
 }
+
+Ray RayTracer::createReflectRay(LocalGeo lg, Ray ray){
+	Vector3f r = ray.direction - 2 * (ray.direction.dot(lg.normal.xyz)) * lg.normal.xyz;
+	return Ray(lg.position, r, 0.01, FLT_MAX);
+}
+
 Scene::Scene(){
 	eye = Vector3f(0, 0, 0);
 	LL = Vector3f(0, 0, 0);

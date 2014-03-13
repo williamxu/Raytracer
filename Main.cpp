@@ -204,7 +204,7 @@ void spheres_shadowtest(){
 	Vector3f ll = Vector3f(-1, -1, -3);
 
 	//scene initializer
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 1);
+	Scene s = Scene(eye, ll, lr, ul, ur, 500,500, 1);
 	//Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, 1);
 
 	//lights
@@ -218,12 +218,12 @@ void spheres_shadowtest(){
 	GeometricPrimitive g2 = GeometricPrimitive(&s2);
 	Sphere s3 = Sphere(Vector3f(-2, -2, -15), 1, BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
 	GeometricPrimitive g3 = GeometricPrimitive(&s3);
-	Triangle t1 = Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20), BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(0, 0, 0), 50));
+	Triangle t1 = Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20), BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(1, 1, 1), 50));
 	GeometricPrimitive g4 = GeometricPrimitive(&t1);
 
 	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4)};
 	vector<Light> lights = vector<Light> {l1, l2};
-	s.raytracer = RayTracer(lights, pr);
+	s.raytracer = RayTracer(lights, pr, 1);
 
 	filename = "shadows.bmp";
 	//render call
@@ -231,6 +231,39 @@ void spheres_shadowtest(){
 
 
 }
+
+void triangle_test(){
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 0);
+	Vector3f ul = Vector3f(-1, 1, -3);
+	Vector3f ur = Vector3f(1, 1, -3);
+	Vector3f lr = Vector3f(1, -1, -3);
+	Vector3f ll = Vector3f(-1, -1, -3);
+
+	//scene initializer
+	//Scene s = Scene(eye, ll, lr, ul, ur, 500,500, 1);
+	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, 1);
+
+	Light l1 = Light(Color(Vector3f(0, 0, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, 0.57735027, -0.57735027));
+
+	//primitives
+	Triangle t1 = Triangle(
+		Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20),
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(1, 1, 1), 50));
+	GeometricPrimitive g1 = GeometricPrimitive(&t1);
+
+	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1)};
+	vector<Light> lights = vector<Light> {l1};
+	s.raytracer = RayTracer(lights, pr, 1);
+
+	filename = "triangles.bmp";
+	//render call
+	s.render(filename);
+
+
+}
+
 
 void loadScene(string file){
 	ifstream input(file.c_str());
@@ -341,13 +374,14 @@ void loadScene(string file){
 
 int main(int argc, char *argv[]) {
 
-	spheretest_yellow_shading();
-	spheretest_with_two_lights();
-	spheretest_with_two_spheres();
-	spheretest_viewing_angle1();
-	spheretest_viewing_angle2();
-	triangletest_blue_shading();
+	//spheretest_yellow_shading();
+	//spheretest_with_two_lights();
+	//spheretest_with_two_spheres();
+	//spheretest_viewing_angle1();
+	//spheretest_viewing_angle2();
+	//triangletest_blue_shading();
 	spheres_shadowtest();
+	//triangle_test();
 	//string file(argv[1]);
 	//loadScene(file);
 	return 0;
