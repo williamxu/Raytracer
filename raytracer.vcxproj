@@ -75,7 +75,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>glut-3.7.6-bin;Eigen;FreeImage</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Eigen;FreeImage</AdditionalIncludeDirectories>
       <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
@@ -88,10 +88,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="raytracer.cpp" />
+    <ClCompile Include="Basics.cpp" />
+    <ClCompile Include="Primitive.cpp" />
+    <ClCompile Include="Raytracer.cpp" />
+    <ClCompile Include="Shape.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Basics.h" />
+    <ClInclude Include="Primitive.h" />
+    <ClInclude Include="Raytracer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Shape.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
