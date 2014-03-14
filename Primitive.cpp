@@ -20,19 +20,19 @@ GeometricPrimitive::GeometricPrimitive(Shape* s, Transformation otw, Transformat
 }
 
 bool GeometricPrimitive::intersect(Ray ray, float* thit, Intersection* in)  {
-	Ray oray = ray;
-	//Ray oray = worldToObj * ray;
+	//Ray oray = ray;
+	Ray oray = worldToObj * ray;
 	LocalGeo olocal = LocalGeo();
 	if (!shape->intersect(oray, thit, &olocal))  return false;
 	in->primitive = this;
-	//in->localGeo = objToWorld * olocal;
-	in->localGeo = olocal;
+	in->localGeo = objToWorld * olocal;
+	//in->localGeo = olocal;
 	return true;
 }
 
 bool GeometricPrimitive::intersectP(Ray ray)  {
-	Ray oray = ray;
-	//Ray oray = worldToObj * ray;
+	//Ray oray = ray;
+	Ray oray = worldToObj * ray;
 	return shape->intersectP(oray);
 }
 void GeometricPrimitive::getBRDF(LocalGeo local, BRDF* brdf) {

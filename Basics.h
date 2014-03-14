@@ -97,9 +97,8 @@ public:
 class Transformation{
 public:
 	aMatrix trans;
-	aMatrix trans_inv;
 	Transformation();
-	Transformation(aMatrix mat, aMatrix mat_inv);
+	Transformation(aMatrix mat);
 	Transformation operator* (Transformation t);
 	Normal operator*(Normal n);
 	Ray operator*(Ray r);

@@ -113,23 +113,37 @@ float BRDF::specularCoefficient(){
 }
 
 aMatrix::aMatrix(){
-	float m[4][4] = {{ 1, 0, 0, 0 }, 
-					{ 0, 1, 0, 0 }, 
-					{ 0, 0, 1, 0 }, 
-					{ 0, 0, 0, 1 }};
+	for (int i = 0; i < 4; i++){
+		for (int j = 0; j < 4; j++){
+			if (i == j) m[i][j] = 1;
+			else m[i][j] = 0;
+		}
+	}
 }
 
 void aMatrix::createRotation(Vector3f rotationAxis, float angle){ //quaternion representation
 	//todo
 }
 void aMatrix::createTranslation(float x, float y, float z){
-	m[0][3] = x;
-	m[1][3] = y;
-	m[2][3] = z;
+	for (int i = 0; i < 4; i++){
+		for (int j = 0; j < 4; j++){
+			if (i == j) m[i][j] = 1;
+			else m[i][j] = 0;
+		}
+	}
+	m[3][0] = x;
+	m[3][1] = y;
+	m[3][2] = z;
 	m[3][3] = 1;
+
 }
 
 void aMatrix::createScale(float x, float y, float z){
+	for (int i = 0; i < 4; i++){
+		for (int j = 0; j < 4; j++){
+			m[i][j] = 0;
+		}
+	}
 	m[0][0] = x;
 	m[1][1] = y;
 	m[2][2] = z;
@@ -137,35 +151,19 @@ void aMatrix::createScale(float x, float y, float z){
 }
 
 Transformation::Transformation(){
-	trans = aMatrix();
-	trans_inv = aMatrix();
 }
-Transformation::Transformation(aMatrix mat, aMatrix matInv){
+Transformation::Transformation(aMatrix mat){
 	trans = mat;
-	trans_inv = matInv;
 }
 
 Transformation Transformation::operator* (Transformation t){
-	aMatrix result; 
+	aMatrix result;
 	for (int x = 0; x < 4; x++){
 		for (int y = 0; y < 4; y++){
 			result.m[x][y] = trans.m[x][0] * t.trans.m[0][y] + trans.m[x][1] * t.trans.m[1][y] + trans.m[x][2] * t.trans.m[2][y] + trans.m[x][3] * t.trans.m[3][y];
 		}
 	}
-	aMatrix resultInv;
-	Matrix4f resultM = Matrix4f();
-	for (int x = 0; x < 4; x++){
-		for (int y = 0; y < 4; y++){
-			resultM(x, y) = result.m[x][y];
-		}
-	}
-	Matrix4f resultInvM = resultM.inverse();
-	for (int x = 0; x < 4; x++){
-		for (int y = 0; y < 4; y++){
-			resultInv.m[x][y] = resultInvM(x, y);
-		}
-	}
-	return Transformation(result, resultInv);
+	return Transformation(result);
 }
 
 Normal Transformation::operator*(Normal n){
@@ -199,10 +197,10 @@ LocalGeo Transformation::operator* (LocalGeo lg){
 	return result;
 }
 Vector3f Transformation::operator* (Vector3f v){
-	float x = trans.m[0][0] * v.x() + trans.m[0][1] * v.x() + trans.m[0][2] * v.x() + trans.m[0][3] * v.x();
-	float y = trans.m[1][0] * v.y() + trans.m[1][1] * v.y() + trans.m[1][2] * v.y() + trans.m[1][3] * v.y();
-	float z = trans.m[2][0] * v.z() + trans.m[2][1] * v.z() + trans.m[2][2] * v.z() + trans.m[2][3] * v.z();
-	float w = trans.m[3][0] + trans.m[3][1] + trans.m[3][2] + trans.m[3][3];
-	Vector3f result = Vector3f(x/w, y/w, z/w);
+	float x = trans.m[0][0] * v.x() + trans.m[1][0] * v.y() + trans.m[2][0] * v.z() + trans.m[3][0];
+	float y = trans.m[0][1] * v.x() + trans.m[1][1] * v.y() + trans.m[2][1] * v.z() + trans.m[3][1];
+	float z = trans.m[0][2] * v.x() + trans.m[1][2] * v.y() + trans.m[2][2] * v.z() + trans.m[3][2];
+	float w = trans.m[0][3] * v.x() + trans.m[1][3] * v.y() + trans.m[2][3] * v.z() + trans.m[3][3];
+	Vector3f result = Vector3f(x / w, y / w, z / w);
 	return result;
-} 
+}

@@ -24,7 +24,7 @@ void spheretest_yellow_shading(){
 	vector<Light> lights = { Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)) };
 	vector<Primitive*> primitives = { (Primitive*)&g1 };
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0, 25);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0);
 	filename = "spheretest_yellow_shading.bmp";
 	//render call
 	s.render(filename);
@@ -217,9 +217,47 @@ void reflection_test(){
 	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4), (Primitive*)(&g5)};
 	vector<Light> lights = vector<Light> {l1, l2};
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, pr, 5, 25);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, pr, 5);
 
 	filename = "reflection_five_spheres.bmp";
+	//render call
+	s.render(filename);
+}
+
+void transform_test(){
+
+	//camera and image plane
+	Vector3f eye = Vector3f(0, 0, 0);
+	Vector3f ul = Vector3f(-1, 1, -3);
+	Vector3f ur = Vector3f(1, 1, -3);
+	Vector3f lr = Vector3f(1, -1, -3);
+	Vector3f ll = Vector3f(-1, -1, -3);
+
+	//scene initializer
+	Light l1 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027));
+	Light l2 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(-0.57735027, 0.57735027, 0.57735027));
+
+	Sphere s1 = Sphere(Vector3f(0, 0, -17), 2,
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
+	
+	aMatrix trans = aMatrix();
+	trans.createTranslation(0.5,0,0);
+	//trans.createScale(2, 1, 1);
+
+	aMatrix invtrans = aMatrix();
+	invtrans.createTranslation(-0.5,0,0);
+	//invtrans.createScale(0.5, 1, 1);
+	
+	Transformation t = Transformation(trans);
+	Transformation t2 = Transformation(invtrans);
+	
+	GeometricPrimitive g1 = GeometricPrimitive(&s1,t,t2);
+
+	vector<Light> lights = { l1, l2 };
+	vector<Primitive*> primitives = { (Primitive*)&g1 };
+
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0);
+	filename = "ellipse.bmp";
 	//render call
 	s.render(filename);
 }
@@ -337,13 +375,14 @@ void loadScene(string file){
 
 int main(int argc, char *argv[]) {
 
-	spheretest_yellow_shading();
-	spheretest_with_two_lights();
-	spheretest_with_two_spheres();
-	spheretest_viewing_angle1();
-	spheretest_viewing_angle2();
-	spheres_shadowtest();
-	reflection_test();
+	//spheretest_yellow_shading();
+	//spheretest_with_two_lights();
+	//spheretest_with_two_spheres();
+	//spheretest_viewing_angle1();
+	//spheretest_viewing_angle2();
+	//spheres_shadowtest();
+	//reflection_test();
+	transform_test();
 	//string file(argv[1]);
 	//loadScene(file);
 	return 0;
