@@ -90,7 +90,7 @@ public:
 	Film film = Film();
 
 	Scene();
-	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth);
+	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth);
 	void addLight(Light light);
 	void addPrimitive(Primitive* p);
 	void render(char* filename);

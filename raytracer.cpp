@@ -169,7 +169,7 @@ Scene::Scene(){
 	camera = Camera();
 	film = Film();
 }
-Scene::Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth){
+Scene::Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth){
 	eye = e;
 	LL = ll;
 	LR = lr;
@@ -178,6 +178,7 @@ Scene::Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, flo
 	dx = x;
 	dy = y;
 	recursionDepth = depth;
+	raytracer = RayTracer(lights, primitives, depth);
 	sampler = Sampler(dx, dy);
 	camera = Camera(eye, ll, lr, ul, ur, x, y, 1.0, FLT_MAX);
 	film = Film(dx, dy);
