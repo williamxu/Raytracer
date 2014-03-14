@@ -46,7 +46,7 @@ bool Sphere::intersectP(Ray& ray) {
 
 Ellipsoid::Ellipsoid()
 Ellipsoid::Ellipsoid(Sphere s, Transformation m, BRDF color);
-Ellipsoid::Ellipsoid(Vector3f c, float rx, float ry, float rz, BRDF color);
+Ellipsoid::Ellipsoid(Vector3f c, f	loat rx, float ry, float rz, BRDF color);
 
 
 Triangle::Triangle(){

@@ -24,6 +24,17 @@ public:
 	Normal(Vector3f vector);
 };
 
+class Matrix {
+public:
+	float[4][4] m;
+	float[4][4] mInv;
+	Matrix();
+	Matrix(Vector4f a, Vector4f b, Vector4f c, Vector4f d);
+	void normalize();
+//	Matrix operator + (Matrix);
+//	Matrix operator - (Matrix);
+//	Matrix operator * (Matrix);
+};
 
 class Ray{
 public:
