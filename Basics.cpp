@@ -112,35 +112,48 @@ float BRDF::specularCoefficient(){
 	return sp;
 }
 
+aMatrix::aMatrix(){
+	float m[4][4] = {{ 1, 0, 0, 0 }, 
+					{ 0, 1, 0, 0 }, 
+					{ 0, 0, 1, 0 }, 
+					{ 0, 0, 0, 1 }};
+}
+
+void aMatrix::createRotation(Vector3f rotationAxis, float angle){ //quaternion representation
+	//todo
+}
+void aMatrix::createTranslation(float x, float y, float z){
+	m[0][3] = x;
+	m[1][3] = y;
+	m[2][3] = z;
+	m[3][3] = 1;
+}
+
+void aMatrix::createScale(float x, float y, float z){
+	m[0][0] = x;
+	m[1][1] = y;
+	m[2][2] = z;
+	m[3][3] = 1;
+}
+
 Transformation::Transformation(){
-	m << 1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1;
-
-	m_inv << 1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1;
+	m = aMatrix();
+	m_inv = aMatrix();
 }
-
-Transformation::Transformation(Matrix4f mat){
-	Matrix4f inverse;
-	bool invertible;
-	mat.computeInverseWithCheck(inverse, invertible);
-	if (invertible) {
-		m_inv = inverse;
-		m = mat;
-	}
-	else cout << "Creation of transformation failed: matrix is uninvertible" << endl;
+Transformation::Transformation(aMatrix mat, aMatrix matInv){
+	m = mat;
+	m_inv = matInv;
 }
-
-Normal Transformation::operator* (Normal n){
-	
+Normal Transformation::operator*(Normal n){
+	//TODO
+	n.xyz;
 }
 Ray Transformation::operator* (Ray r){
+	//TODO
 }
 LocalGeo Transformation::operator* (LocalGeo lg){
+	//TODO
 }
 Vector3f Transformation::operator* (Vector3f v){
+	//TODO
 } //Vector or point?

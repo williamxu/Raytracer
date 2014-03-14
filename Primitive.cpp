@@ -11,18 +11,24 @@ Intersection::Intersection(LocalGeo l, Primitive* p){
 GeometricPrimitive::GeometricPrimitive(Shape* s){
 	shape = s;
 }
+GeometricPrimitive::GeometricPrimitive(Shape* s, Transformation otw, Transformation wto){
+	shape = s;
+	worldToObj = wto;
+	objToWorld = otw;
+}
 
 bool GeometricPrimitive::intersect(Ray ray, float* thit, Intersection* in)  {
-	Ray oray = ray;
+	Ray oray = worldToObj * ray;
 	LocalGeo olocal = LocalGeo();
 	if (!shape->intersect(oray, thit, &olocal))  return false;
 	in->primitive = this;
-	in->localGeo = olocal;
+	in->localGeo = objToWorld * olocal;
 	return true;
 }
 
 bool GeometricPrimitive::intersectP(Ray ray)  {
-	return shape->intersectP(ray);
+	Ray oray = worldToObj * ray;
+	return shape->intersectP(oray);
 }
 void GeometricPrimitive::getBRDF(LocalGeo local, BRDF* brdf) {
 	*brdf = shape->brdf;

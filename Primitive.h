@@ -29,8 +29,9 @@ public:
 class GeometricPrimitive : public Primitive{
 	GeometricPrimitive(){}
 public:
-	//Transformation objToWorld, worldToObj;
+	Transformation objToWorld, worldToObj;
 	GeometricPrimitive(Shape* s);
+	GeometricPrimitive(Shape* s, Transformation otw, Transformation wto);
 	bool intersect(Ray ray, float* thit, Intersection* in);
 	bool intersectP(Ray ray);
 	void getBRDF(LocalGeo local, BRDF* brdf);

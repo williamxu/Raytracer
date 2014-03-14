@@ -44,10 +44,21 @@ bool Sphere::intersectP(Ray& ray) {
 }
 
 
-Ellipsoid::Ellipsoid()
-Ellipsoid::Ellipsoid(Sphere s, Transformation m, BRDF color);
-Ellipsoid::Ellipsoid(Vector3f c, f	loat rx, float ry, float rz, BRDF color);
+Ellipsoid::Ellipsoid(){
 
+}
+Ellipsoid::Ellipsoid(Sphere s, Transformation m, BRDF color){
+
+}
+Ellipsoid::Ellipsoid(Vector3f c, float rx, float ry, float rz, BRDF color){
+
+}
+bool Ellipsoid::intersect(Ray& ray, float* thit, LocalGeo* local){
+
+}
+bool Ellipsoid::intersectP(Ray& ray){
+
+}
 
 Triangle::Triangle(){
 	p1 = Vector3f(0, 0, 0);
@@ -97,19 +108,19 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 		float d = p1.x() - p3.x();
 		float e = p1.y() - p3.y();
 		float f = p1.z() - p3.z();
-		
+
 		float g = ray.direction.x();
 		float h = ray.direction.y();
 		float i = ray.direction.z();
-		
+
 		float j = p1.x() - ray.point.x();
 		float k = p1.y() - ray.point.y();
 		float l = p1.z() - ray.point.z();
-		
+
 		float M = a * (e * i - h * f) + b * (g * f - d * i) + c * (d * h - e * g);
-		
+
 		float t = -(f * (a * k - j * b) + e * (j * c - a * l) + d * (b * l - k * c)) / M;
-		
+
 		*thit = t;
 		Vector3f p = ray.atTime(t);
 		Vector3f norm = (p2 - p1).cross(p3 - p1);

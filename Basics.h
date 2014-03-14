@@ -24,16 +24,30 @@ public:
 	Normal(Vector3f vector);
 };
 
-class Matrix {
+//Matrix
+//Notes :
+//Support creation of rotation, translation, scaling matrices
+//May support matrix inversion if needed
+//Also could support SVD, or other matrix decomposition, for future extension
+class aMatrix {
 public:
-	float[4][4] m;
-	float[4][4] mInv;
-	Matrix();
-	Matrix(Vector4f a, Vector4f b, Vector4f c, Vector4f d);
-	void normalize();
-//	Matrix operator + (Matrix);
-//	Matrix operator - (Matrix);
-//	Matrix operator * (Matrix);
+	float m[4][4];
+	aMatrix();
+	void createRotation(Vector3f rotationAxis, float angle);
+	void createTranslation(float x, float y, float z);
+	void createScale(float x, float y, float z);
+};
+
+class Transformation{
+	aMatrix m;
+	aMatrix m_inv;
+public:
+	Transformation();
+	Transformation(aMatrix mat, aMatrix mat_inv);
+	Normal operator* (Normal n);
+	Ray operator* (Ray r);
+	LocalGeo operator* (LocalGeo lg);
+	Vector3f operator* (Vector3f v); //Vector or point?
 };
 
 class Ray{
@@ -89,22 +103,4 @@ public:
 	Color diffuse(Vector3f normal, Vector3f lightVector, Color lightColor);
 	Color specular(Vector3f eye, Vector3f normal, Vector3f lightVector, Color lightColor, float power);
 	float specularCoefficient();
-};
-
-//Matrix
-//Notes :
-//Support creation of rotation, translation, scaling matrices
-//May support matrix inversion if needed
-//Also could support SVD, or other matrix decomposition, for future extension
-
-class Transformation{
-	Matrix4f m;
-	Matrix4f m_inv;
-public:
-	Transformation();
-	Transformation(Matrix4f mat);
-	Normal operator* (Normal n);
-	Ray operator* (Ray r);
-	LocalGeo operator* (LocalGeo lg);
-	Vector3f operator* (Vector3f v); //Vector or point?
 };
