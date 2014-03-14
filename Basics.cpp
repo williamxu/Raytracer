@@ -137,23 +137,58 @@ void aMatrix::createScale(float x, float y, float z){
 }
 
 Transformation::Transformation(){
-	m = aMatrix();
-	m_inv = aMatrix();
+	trans = aMatrix();
+	trans_inv = aMatrix();
 }
 Transformation::Transformation(aMatrix mat, aMatrix matInv){
-	m = mat;
-	m_inv = matInv;
+	trans = mat;
+	trans_inv = matInv;
 }
+
+Transformation Transformation::operator* (Transformation t){
+	aMatrix result; 
+	for (int x; x < 4; x++){
+		for (int y; y < 4; y++){
+			result.m[x][y] = trans.m[x][0] * t.trans.m[0][y] + trans.m[x][1] * t.trans.m[1][y] + trans.m[x][2] * t.trans.m[2][y] + trans.m[x][3] * t.trans.m[3][y];
+		}
+	}
+}
+
 Normal Transformation::operator*(Normal n){
-	//TODO
-	n.xyz;
+	float a[16];
+	int z = 0;
+	for (int x; x < 4; x++){
+		for (int y; y < 4; y++){
+			a[z] = trans.m[x][y];
+			z++;
+		}
+	}
+	Vector3f b = Vector3f(a[5] * a[10] - a[9] * a[6], a[9] * a[2] - a[1] * a[10], a[1] * a[6] - a[5] * a[2]);
+	Vector3f c = Vector3f(a[8] * a[6] - a[4] * a[10], a[0] * a[10] - a[8] * a[2], a[4] * a[2] - a[0] * a[6]);
+	Vector3f d = Vector3f(a[4] * a[9] - a[8] * a[5], a[8] * a[1] - a[0] * a[9], a[0] * a[5] - a[4] * a[1]);
+	float i = b.x() * n.xyz.x() + c.x() * n.xyz.x() + d.x() * n.xyz.x();
+	float j = b.y() * n.xyz.y() + c.y() * n.xyz.y() + d.y() * n.xyz.y();
+	float k = b.z() * n.xyz.z() + c.z() * n.xyz.z() + d.z() * n.xyz.z();
+	Normal result = Normal(Vector3f(i, j, k));
+	return result;
 }
 Ray Transformation::operator* (Ray r){
-	//TODO
+	Vector3f result1 = *this * r.point;
+	Vector3f result2 = *this * r.direction;
+	Ray result = Ray(result1, result2, r.t_min, r.t_max);
+	return result;
 }
 LocalGeo Transformation::operator* (LocalGeo lg){
-	//TODO
+	Vector3f result1 = *this * lg.position;
+	Normal result2 = *this * lg.normal;
+	LocalGeo result = LocalGeo(result1, result2);
+	return result;
 }
 Vector3f Transformation::operator* (Vector3f v){
-	//TODO
-} //Vector or point?
+	float x = trans.m[0][0] * v.x() + trans.m[0][1] * v.x() + trans.m[0][2] * v.x() + trans.m[0][3] * v.x();
+	float y = trans.m[1][0] * v.y() + trans.m[1][1] * v.y() + trans.m[1][2] * v.y() + trans.m[1][3] * v.y();
+	float z = trans.m[2][0] * v.z() + trans.m[2][1] * v.z() + trans.m[2][2] * v.z() + trans.m[2][3] * v.z();
+	float w = trans.m[3][0] + trans.m[3][1] + trans.m[3][2] + trans.m[3][3];
+	Vector3f result = Vector3f(x/w, y/w, z/w);
+	return result;
+} 

@@ -38,18 +38,6 @@ public:
 	void createScale(float x, float y, float z);
 };
 
-class Transformation{
-	aMatrix m;
-	aMatrix m_inv;
-public:
-	Transformation();
-	Transformation(aMatrix mat, aMatrix mat_inv);
-	Normal operator* (Normal n);
-	Ray operator* (Ray r);
-	LocalGeo operator* (LocalGeo lg);
-	Vector3f operator* (Vector3f v); //Vector or point?
-};
-
 class Ray{
 public:
 	Vector3f point;
@@ -103,4 +91,17 @@ public:
 	Color diffuse(Vector3f normal, Vector3f lightVector, Color lightColor);
 	Color specular(Vector3f eye, Vector3f normal, Vector3f lightVector, Color lightColor, float power);
 	float specularCoefficient();
+};
+
+class Transformation{
+public:
+	aMatrix trans;
+	aMatrix trans_inv;
+	Transformation();
+	Transformation(aMatrix mat, aMatrix mat_inv);
+	Transformation operator* (Transformation t);
+	Normal operator*(Normal n);
+	Ray operator*(Ray r);
+	LocalGeo operator*(LocalGeo lg);
+	Vector3f operator*(Vector3f v); //Vector or point?
 };
