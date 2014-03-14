@@ -86,27 +86,14 @@ public:
 //May support matrix inversion if needed
 //Also could support SVD, or other matrix decomposition, for future extension
 
-//class Transformation{
-//public:
-//	Matrix4f m;
-//	Matrix4f m_inv;
-//	Transformation(){
-//		m = Matrix4f();
-//	}
-//	Transformation(Matrix4f mat, Matrix4f mat_inv){
-//		m = mat;
-//		m_inv = mat_inv;
-//	}
-//	//Normal operator* (Normal n){
-//	//	
-//	//}
-//	//Ray operator* (Ray r){
-//	//}
-//	//LocalGeo operator* (LocalGeo lg){
-//	//}
-//
-//	//Notes :
-//	//Support Point, Vector, Normal, Ray, LocalGeo transformation by
-//	//operator * overloading
-//
-//};
+class Transformation{
+	Matrix4f m;
+	Matrix4f m_inv;
+public:
+	Transformation();
+	Transformation(Matrix4f mat);
+	Normal operator* (Normal n);
+	Ray operator* (Ray r);
+	LocalGeo operator* (LocalGeo lg);
+	Vector3f operator* (Vector3f v); //Vector or point?
+};

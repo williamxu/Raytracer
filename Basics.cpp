@@ -111,3 +111,36 @@ Color BRDF::specular(Vector3f eye, Vector3f normal, Vector3f lightVector, Color 
 float BRDF::specularCoefficient(){
 	return sp;
 }
+
+Transformation::Transformation(){
+	m << 1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1;
+
+	m_inv << 1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1;
+}
+
+Transformation::Transformation(Matrix4f mat){
+	Matrix4f inverse;
+	bool invertible;
+	mat.computeInverseWithCheck(inverse, invertible);
+	if (invertible) {
+		m_inv = inverse;
+		m = mat;
+	}
+	else cout << "Creation of transformation failed: matrix is uninvertible" << endl;
+}
+
+Normal Transformation::operator* (Normal n){
+	
+}
+Ray Transformation::operator* (Ray r){
+}
+LocalGeo Transformation::operator* (LocalGeo lg){
+}
+Vector3f Transformation::operator* (Vector3f v){
+} //Vector or point?
