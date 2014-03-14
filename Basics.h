@@ -34,7 +34,9 @@ class aMatrix {
 public:
 	float m[4][4];
 	aMatrix();
-	void createRotation(Vector3f rotationAxis, float angle);
+	aMatrix operator*(aMatrix other);
+	void createEulerRotation(float x, float y, float z);
+	void createQuaternionRotation(Vector3f complex, float real); //using quaternion matrix
 	void createTranslation(float x, float y, float z);
 	void createScale(float x, float y, float z);
 };
@@ -103,5 +105,6 @@ public:
 	Normal operator*(Normal n);
 	Ray operator*(Ray r);
 	LocalGeo operator*(LocalGeo lg);
-	Vector3f operator*(Vector3f v); //Vector or point?
+	Vector3f operator*(Vector3f v);
+	Vector3f mulDirection(Vector3f d);
 };

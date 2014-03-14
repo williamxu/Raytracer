@@ -217,7 +217,7 @@ void reflection_test(){
 	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4), (Primitive*)(&g5)};
 	vector<Light> lights = vector<Light> {l1, l2};
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, pr, 5);
+	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, lights, pr, 5);
 
 	filename = "reflection_five_spheres.bmp";
 	//render call
@@ -241,12 +241,14 @@ void transform_test(){
 		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
 	
 	aMatrix trans = aMatrix();
-	trans.createTranslation(0.5,0,0);
+	//trans.createTranslation(0.5,0,0);
 	//trans.createScale(2, 1, 1);
+	trans.createEulerRotation(0, -45, -45);
 
 	aMatrix invtrans = aMatrix();
-	invtrans.createTranslation(-0.5,0,0);
+	//invtrans.createTranslation(-0.5,0,0);
 	//invtrans.createScale(0.5, 1, 1);
+	invtrans.createEulerRotation(0, 45, 45);
 	
 	Transformation t = Transformation(trans);
 	Transformation t2 = Transformation(invtrans);
@@ -256,7 +258,7 @@ void transform_test(){
 	vector<Light> lights = { l1, l2 };
 	vector<Primitive*> primitives = { (Primitive*)&g1 };
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0);
+	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, lights, primitives, 0);
 	filename = "ellipse.bmp";
 	//render call
 	s.render(filename);
