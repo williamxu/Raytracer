@@ -147,19 +147,20 @@ Transformation::Transformation(aMatrix mat, aMatrix matInv){
 
 Transformation Transformation::operator* (Transformation t){
 	aMatrix result; 
-	for (int x; x < 4; x++){
-		for (int y; y < 4; y++){
+	for (int x =0; x < 4; x++){
+		for (int y = 0; y < 4; y++){
 			result.m[x][y] = trans.m[x][0] * t.trans.m[0][y] + trans.m[x][1] * t.trans.m[1][y] + trans.m[x][2] * t.trans.m[2][y] + trans.m[x][3] * t.trans.m[3][y];
 		}
 	}
+	return Transformation(result, );
 }
 
 Normal Transformation::operator*(Normal n){
 	float a[16];
 	int z = 0;
-	for (int x; x < 4; x++){
-		for (int y; y < 4; y++){
-			a[z] = trans.m[x][y];
+	for (int x = 0; x < 4; x++){
+		for (int y = 0; y < 4; y++){
+			a[z] = this->trans.m[x][y];
 			z++;
 		}
 	}
