@@ -247,30 +247,29 @@ Transformation Transformation::operator* (Transformation t){ //this multiply tra
 }
 
 Normal Transformation::operator*(Normal n){
-	float a[16];
-	int z = 0;
-	for (int x = 0; x < 4; x++){
-		for (int y = 0; y < 4; y++){
-			a[z] = this->trans.m[x][y];
-			z++;
-		}
-	}
-	Vector3f b = Vector3f(a[5] * a[10] - a[9] * a[6], a[9] * a[2] - a[1] * a[10], a[1] * a[6] - a[5] * a[2]);
-	Vector3f c = Vector3f(a[8] * a[6] - a[4] * a[10], a[0] * a[10] - a[8] * a[2], a[4] * a[2] - a[0] * a[6]);
-	Vector3f d = Vector3f(a[4] * a[9] - a[8] * a[5], a[8] * a[1] - a[0] * a[9], a[0] * a[5] - a[4] * a[1]);
-	float i = b.x() * n.xyz.x() + c.x() * n.xyz.x() + d.x() * n.xyz.x();
-	float j = b.y() * n.xyz.y() + c.y() * n.xyz.y() + d.y() * n.xyz.y();
-	float k = b.z() * n.xyz.z() + c.z() * n.xyz.z() + d.z() * n.xyz.z();
-	Normal result = Normal(Vector3f(i, j, k));
-	return result;
+	aMatrix nMat = aMatrix();
+	aMatrix a = this->trans;
+	nMat.m[0][0] = a.m[1][1] * a.m[2][2] - a.m[1][2] * a.m[2][1];
+	nMat.m[0][1] = a.m[0][2] * a.m[2][1] - a.m[0][1] * a.m[2][2];
+	nMat.m[0][2] = a.m[0][1] * a.m[1][2] - a.m[0][2] * a.m[1][1];
+
+	nMat.m[1][0] = a.m[1][2] * a.m[2][0] - a.m[1][0] * a.m[2][2];
+	nMat.m[1][1] = a.m[0][0] * a.m[2][2] - a.m[0][2] * a.m[2][0];
+	nMat.m[1][2] = a.m[0][2] * a.m[1][0] - a.m[0][0] * a.m[1][2];
+
+	nMat.m[2][0] = a.m[1][0] * a.m[2][1] - a.m[1][1] * a.m[2][0];
+	nMat.m[2][1] = a.m[0][1] * a.m[2][0] - a.m[0][0] * a.m[2][1];
+	nMat.m[2][2] = a.m[0][0] * a.m[1][1] - a.m[0][1] * a.m[1][0];
+
+	Vector3f result = Transformation(nMat) * n.xyz;
+	return Normal(result);
 }
 
 Ray Transformation::operator* (Ray r){
 	Vector3f newOrigin = *this * r.point;
 	Vector3f newDirection = this->mulDirection(r.direction);
 
-
-	Ray result = Ray(newOrigin, newDirection.normalized(), r.t_min, r.t_max);
+	Ray result = Ray(newOrigin, newDirection, r.t_min, r.t_max);
 	return result;
 }
 LocalGeo Transformation::operator* (LocalGeo lg){
