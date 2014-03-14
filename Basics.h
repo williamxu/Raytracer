@@ -9,6 +9,7 @@
 #endif
 
 #include <Dense>
+#include <LU>
 
 using namespace Eigen;
 using namespace std;
