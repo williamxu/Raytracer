@@ -21,17 +21,6 @@ public:
 	bool intersectP(Ray& ray);
 };
 
-class Ellipsoid : public Sphere{
-private:
-	Transformation M;
-public:
-	Ellipsoid();
-	Ellipsoid(Sphere s, Transformation m, BRDF color);
-	Ellipsoid(Vector3f c, float rx, float ry, float rz, BRDF color);
-	bool intersect(Ray& ray, float* thit, LocalGeo* local);
-	bool intersectP(Ray& ray);
-};
-
 class Triangle : public Shape{
 public:
 	Vector3f p1;

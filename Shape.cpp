@@ -43,23 +43,6 @@ bool Sphere::intersectP(Ray& ray) {
 	return false;
 }
 
-
-Ellipsoid::Ellipsoid(){
-
-}
-Ellipsoid::Ellipsoid(Sphere s, Transformation m, BRDF color){
-
-}
-Ellipsoid::Ellipsoid(Vector3f c, float rx, float ry, float rz, BRDF color){
-
-}
-bool Ellipsoid::intersect(Ray& ray, float* thit, LocalGeo* local){
-
-}
-bool Ellipsoid::intersectP(Ray& ray){
-
-}
-
 Triangle::Triangle(){
 	p1 = Vector3f(0, 0, 0);
 	p2 = Vector3f(1, 0, 0);
