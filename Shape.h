@@ -8,6 +8,7 @@ public:
 	BRDF brdf;
 	virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
 	virtual bool intersectP(Ray& ray) = 0;
+	virtual void transform(Transformation t) = 0;
 
 };
 
@@ -19,6 +20,7 @@ public:
 	Sphere(Vector3f c, float r, BRDF color);
 	bool intersect(Ray& ray, float* thit, LocalGeo* local);
 	bool intersectP(Ray& ray);
+	void transform(Transformation t);
 };
 
 class Triangle : public Shape{
@@ -30,4 +32,5 @@ public:
 	Triangle(Vector3f P1, Vector3f P2, Vector3f P3, BRDF color);
 	bool intersectP(Ray& ray);
 	bool intersect(Ray& ray, float* thit, LocalGeo* local);
+	void transform(Transformation t);
 };

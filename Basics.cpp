@@ -156,22 +156,25 @@ void aMatrix::createEulerRotation(float x, float y, float z){
 			}
 		}
 	}
+	x = x*PI / 180;
+	y = y*PI / 180;
+	z = z*PI / 180;
 	Rx.m[1][1] = cos(x);
-	Rx.m[1][2] = sin(x);
-	Rx.m[2][1] = -sin(x);
+	Rx.m[1][2] = -sin(x);
+	Rx.m[2][1] = sin(x);
 	Rx.m[2][2] = cos(x);
 
 	Ry.m[0][0] = cos(y);
-	Ry.m[0][2] = -sin(y);
-	Ry.m[2][0] = sin(y);
+	Ry.m[0][2] = sin(y);
+	Ry.m[2][0] = -sin(y);
 	Ry.m[2][2] = cos(y);
 
 	Rz.m[0][0] = cos(z);
-	Rz.m[0][1] = sin(z);
-	Rz.m[1][0] = -sin(z);
+	Rz.m[0][1] = -sin(z);
+	Rz.m[1][0] = sin(z);
 	Rz.m[1][1] = cos(z);
 	
-	aMatrix t = Rz * Ry * Rx;
+	aMatrix t = (Rx * Ry) * Rz;
 	for (int i = 0; i < 4; i++){
 		for (int j = 0; j < 4; j++){
 			m[i][j] = t.m[i][j];
@@ -179,33 +182,34 @@ void aMatrix::createEulerRotation(float x, float y, float z){
 	}
 }
 
-void aMatrix::createQuaternionRotation(Vector3f quaternion, float z){ //quaternion representation
-	float w = quaternion.x();
-	float x = quaternion.y();
-	float y = quaternion.z();
-	for (int i = 0; i < 4; i++){
-		for (int j = 0; j < 4; j++){
-			if (i == j) m[i][j] = 1;
-			else m[i][j] = 0;
-		}
-	}
-	float xsqr = 2 * sqr(x);
-	float ysqr = 2 * sqr(y);
-	float zsqr = 2 * sqr(z);
+//void aMatrix::createQuaternionRotation(Vector3f quaternion, float z){ //quaternion representation
+//	float w = quaternion.x();
+//	float x = quaternion.y();
+//	float y = quaternion.z();
+//	for (int i = 0; i < 4; i++){
+//		for (int j = 0; j < 4; j++){
+//			if (i == j) m[i][j] = 1;
+//			else m[i][j] = 0;
+//		}
+//	}
+//	float xsqr = 2 * sqr(x);
+//	float ysqr = 2 * sqr(y);
+//	float zsqr = 2 * sqr(z);
+//
+//	m[0][0] = 1 - ysqr - zsqr;
+//	m[0][1] = (2 * x * y) + (2 * z * w);
+//	m[0][2] = (2 * x * z) - (2 * y * w);
+//
+//	m[1][0] = (2 * x * y) - (2 * z * w);
+//	m[1][1] = 1 - xsqr - zsqr;
+//	m[1][2] = 2 * y * z + 2 * x * w;
+//
+//	m[2][0] = 2 * x * z + 2 * y * w;
+//	m[2][1] = 2 * y * z - 2 * x * w;
+//	m[2][2] = 1 - xsqr - ysqr;
+//
+//}
 
-	m[0][0] = 1 - ysqr - zsqr;
-	m[0][1] = (2 * x * y) + (2 * z * w);
-	m[0][2] = (2 * x * z) - (2 * y * w);
-
-	m[1][0] = (2 * x * y) - (2 * z * w);
-	m[1][1] = 1 - xsqr - zsqr;
-	m[1][2] = 2 * y * z + 2 * x * w;
-
-	m[2][0] = 2 * x * z + 2 * y * w;
-	m[2][1] = 2 * y * z - 2 * x * w;
-	m[2][2] = 1 - xsqr - ysqr;
-
-}
 void aMatrix::createTranslation(float x, float y, float z){
 	for (int i = 0; i < 4; i++){
 		for (int j = 0; j < 4; j++){
@@ -260,16 +264,26 @@ Normal Transformation::operator*(Normal n){
 	Normal result = Normal(Vector3f(i, j, k));
 	return result;
 }
+
 Ray Transformation::operator* (Ray r){
-	Vector3f result1 = *this * r.point;
-	Vector3f result2 = *this * r.direction;
-	Ray result = Ray(result1, result2, r.t_min, r.t_max);
+	Vector3f newOrigin = *this * r.point;
+	Vector3f newDirection = this->mulDirection(r.direction);
+
+
+	Ray result = Ray(newOrigin, newDirection.normalized(), r.t_min, r.t_max);
 	return result;
 }
 LocalGeo Transformation::operator* (LocalGeo lg){
 	Vector3f result1 = *this * lg.position;
 	Normal result2 = *this * lg.normal;
 	LocalGeo result = LocalGeo(result1, result2);
+	return result;
+}
+Vector3f Transformation::mulDirection(Vector3f v){
+	float x = trans.m[0][0] * v.x() + trans.m[1][0] * v.y() + trans.m[2][0] * v.z();
+	float y = trans.m[0][1] * v.x() + trans.m[1][1] * v.y() + trans.m[2][1] * v.z();
+	float z = trans.m[0][2] * v.x() + trans.m[1][2] * v.y() + trans.m[2][2] * v.z();
+	Vector3f result = Vector3f(x, y, z);
 	return result;
 }
 

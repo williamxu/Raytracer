@@ -14,6 +14,8 @@
 using namespace Eigen;
 using namespace std;
 
+#define PI 3.14159265
+
 enum LightType { POINTLIGHT, DIRECTIONALLIGHT };
 
 inline float sqr(float x) { return x*x; }

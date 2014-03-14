@@ -10,6 +10,10 @@ Sphere::Sphere(Vector3f c, float r, BRDF color){
 	center = c;
 	radius = r;
 }
+void Sphere::transform(Transformation t){
+	center = t * center;
+}
+
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local) {
 	if (intersectP(ray)){
 		Vector3f d = ray.direction;
@@ -17,9 +21,16 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local) {
 		Vector3f c = center;
 		float x = sqr(d.dot(e - c)) - ((d.dot(d)) * ((e - c).dot(e - c) - sqr(radius)));
 		float t = (-d.dot(e - c) - (sqrt(x))) / (d.dot(d));
+		float t2 = (-d.dot(e - c) + (sqrt(x))) / (d.dot(d));
 		if (t >= ray.t_min && t < ray.t_max){
 			*thit = t;
 			Vector3f p = ray.atTime(t);
+			*local = LocalGeo(p, Normal(p - c));
+			return true;
+		}
+		else if (t2 >= ray.t_min && t2 < ray.t_max){
+			*thit = t2;
+			Vector3f p = ray.atTime(t2);
 			*local = LocalGeo(p, Normal(p - c));
 			return true;
 		}
@@ -38,7 +49,7 @@ bool Sphere::intersectP(Ray& ray) {
 		float x = sqr(d.dot(e - c)) - ((d.dot(d)) * ((e - c).dot(e - c) - sqr(radius)));
 		float t1 = (-d.dot(e - c) - (sqrt(x))) / (d.dot(d));
 		float t2 = (-d.dot(e - c) + (sqrt(x))) / (d.dot(d));
-		return (t1 >= ray.t_min && t1 < ray.t_max && t2 >= ray.t_min && t2 < ray.t_max);
+		return ((t1 >= ray.t_min && t1 < ray.t_max) || (t2 >= ray.t_min && t2 < ray.t_max));
 	}
 	return false;
 }
@@ -53,6 +64,11 @@ Triangle::Triangle(Vector3f P1, Vector3f P2, Vector3f P3, BRDF color){
 	p2 = P2;
 	p3 = P3;
 	brdf = color;
+}
+void Triangle::transform(Transformation t){
+	p1 = t * p1;
+	p2 = t * p2;
+	p3 = t * p3;
 }
 bool Triangle::intersectP(Ray& ray){
 	float a = p1.x() - p2.x();

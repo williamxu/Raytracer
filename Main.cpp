@@ -243,22 +243,23 @@ void transform_test(){
 	aMatrix trans = aMatrix();
 	//trans.createTranslation(0.5,0,0);
 	//trans.createScale(2, 1, 1);
-	trans.createEulerRotation(0, -45, -45);
+	trans.createEulerRotation(45, 0, 0);
 
 	aMatrix invtrans = aMatrix();
 	//invtrans.createTranslation(-0.5,0,0);
 	//invtrans.createScale(0.5, 1, 1);
-	invtrans.createEulerRotation(0, 45, 45);
+	invtrans.createEulerRotation(-45, 0, 0);
 	
 	Transformation t = Transformation(trans);
 	Transformation t2 = Transformation(invtrans);
 	
 	GeometricPrimitive g1 = GeometricPrimitive(&s1,t,t2);
+	//GeometricPrimitive g1 = GeometricPrimitive(&s1);
 
 	vector<Light> lights = { l1, l2 };
 	vector<Primitive*> primitives = { (Primitive*)&g1 };
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, lights, primitives, 0);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0);
 	filename = "ellipse.bmp";
 	//render call
 	s.render(filename);

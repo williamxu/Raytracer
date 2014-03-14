@@ -15,15 +15,20 @@ GeometricPrimitive::GeometricPrimitive(Shape* s){
 }
 GeometricPrimitive::GeometricPrimitive(Shape* s, Transformation otw, Transformation wto){
 	shape = s;
-	worldToObj = wto;
 	objToWorld = otw;
+	worldToObj = wto;
 }
 
 bool GeometricPrimitive::intersect(Ray ray, float* thit, Intersection* in)  {
 	//Ray oray = ray;
-	Ray oray = worldToObj * ray;
+	Ray oray = worldToObj * ray; //the new ray is taking the inverse of objToWorld
+	shape->transform(worldToObj);
 	LocalGeo olocal = LocalGeo();
-	if (!shape->intersect(oray, thit, &olocal))  return false;
+	if (!shape->intersect(oray, thit, &olocal)){
+		shape->transform(objToWorld);
+		return false;
+	}
+	shape->transform(objToWorld);
 	in->primitive = this;
 	in->localGeo = objToWorld * olocal;
 	//in->localGeo = olocal;
