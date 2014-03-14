@@ -24,7 +24,7 @@ void spheretest_yellow_shading(){
 	vector<Light> lights = { Light(Color(Vector3f(0.6, 0.6, 0.6)), POINTLIGHT, Vector3f(200, 200, 200)) };
 	vector<Primitive*> primitives = { (Primitive*)&g1 };
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, primitives, 0, 25);
 	filename = "spheretest_yellow_shading.bmp";
 	//render call
 	s.render(filename);
@@ -217,7 +217,7 @@ void reflection_test(){
 	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4), (Primitive*)(&g5)};
 	vector<Light> lights = vector<Light> {l1, l2};
 
-	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, pr, 5);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, lights, pr, 5, 25);
 
 	filename = "reflection_five_spheres.bmp";
 	//render call
@@ -337,12 +337,12 @@ void loadScene(string file){
 
 int main(int argc, char *argv[]) {
 
-	//spheretest_yellow_shading();
-	//spheretest_with_two_lights();
-	//spheretest_with_two_spheres();
-	//spheretest_viewing_angle1();
-	//spheretest_viewing_angle2();
-	//spheres_shadowtest();
+	spheretest_yellow_shading();
+	spheretest_with_two_lights();
+	spheretest_with_two_spheres();
+	spheretest_viewing_angle1();
+	spheretest_viewing_angle2();
+	spheres_shadowtest();
 	reflection_test();
 	//string file(argv[1]);
 	//loadScene(file);

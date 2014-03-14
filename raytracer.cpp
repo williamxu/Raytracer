@@ -18,44 +18,95 @@ Sampler::Sampler(int x, int y){
 	dx = x - 1;
 	dy = y - 1;
 }
+Sampler::Sampler(int x, int y, int aliasing){
+	dx = x - 1;
+	dy = y - 1;
+	distribution = aliasing;
+}
+
 //generates one sample per pixel
 bool Sampler::generateSample(Sample* sample){
-	*sample = Sample(curr_x, curr_y);
-	if (curr_x >= dx) {
-		if (curr_y >= dy){
-			return false;
+	if (distribution > 1){
+		float a = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		//float a = 0.5;
+		//float b = 0.5;
+		*sample = Sample(curr_x + a, curr_y + b);
+		if (counter > distribution){
+			counter = 0;
+			if (curr_x >= dx) {
+				if (curr_y >= dy){
+					return false;
+				}
+				curr_y += 1;
+				curr_x = 0;
+			}
+			else{
+				curr_x += 1;
+			}
 		}
-		curr_y += 1;
-		curr_x = 0;
+		else{
+			counter += 1;
+		}
+		return true;
 	}
+
 	else{
-		curr_x += 1;
+		*sample = Sample(curr_x, curr_y);
+		if (curr_x >= dx) {
+			if (curr_y >= dy){
+				return false;
+			}
+			curr_y += 1;
+			curr_x = 0;
+		}
+		else{
+			curr_x += 1;
+		}
+		return true;
 	}
-	return true;
 }
 
 Film::Film(){
 	dx = 0;
 	dy = 0;
+
 }
 Film::Film(int x, int y){
 	FreeImage_Initialise();
 	dx = x;
 	dy = y;
+	colors = new Color[(x + 1)*(y + 1)];
 	bitmap = FreeImage_Allocate(dx, dy, 24); //24?
 }
+Film::Film(int x, int y, int spp){
+	FreeImage_Initialise();
+	dx = x;
+	dy = y;
+	samplesPerPixel = spp;
+	colors = new Color[(x + 1)*(y + 1)];
+	bitmap = FreeImage_Allocate(dx, dy, 24); //24?
+}
+
 // Will write the color to (sample.x, sample.y) on the image
 void Film::commit(Sample& sample, Color& c){
-	RGBQUAD color;
-	color.rgbRed = min(c.rgb[0], 1) * 255;
-	color.rgbGreen = min(c.rgb[1], 1) * 255;
-	color.rgbBlue = min(c.rgb[2], 1) * 255;
-	FreeImage_SetPixelColor(bitmap, (int)sample.dx, (int)sample.dy, &color);
-
+	int x = (int)sample.dx;
+	int y = (int)sample.dy;
+	colors[x + dx*y] = colors[x + dx*y] + c;
 }
 // Output image to a file
 void Film::writeImage(char* filename){
 
+	for (int x = 0; x < dx; x++){
+		for (int y = 0; y < dy; y++){
+			Color c = colors[x + dx*y];
+			RGBQUAD color;
+			color.rgbRed = min(c.rgb[0] / samplesPerPixel, 1) * 255;
+			color.rgbGreen = min(c.rgb[1] / samplesPerPixel, 1) * 255;
+			color.rgbBlue = min(c.rgb[2] / samplesPerPixel, 1) * 255;
+			FreeImage_SetPixelColor(bitmap, x, y, &color);
+		}
+	}
 	int index = string(filename).find_last_of('.') + 1;
 	if (FreeImage_Save(FreeImage_GetFIFFromFormat(filename + index), bitmap, filename)) {
 		cout << "Image saved successfully." << endl;
@@ -85,8 +136,8 @@ Camera::Camera(Vector3f p, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, f
 	t_max = tmax;
 }
 void Camera::generateRay(Sample& sample, Ray* ray){
-	float u = (sample.dx + 0.5) / dx;
-	float v = (sample.dy + 0.5) / dy;
+	float u = sample.dx / dx;
+	float v = sample.dy / dy;
 	if (u > 1 || v > 1){
 		cout << "u or v is greater than 1" << endl;
 		return;
@@ -182,6 +233,21 @@ Scene::Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, flo
 	sampler = Sampler(dx, dy);
 	camera = Camera(eye, ll, lr, ul, ur, x, y, 1.0, FLT_MAX);
 	film = Film(dx, dy);
+}
+Scene::Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth, int samples){
+	eye = e;
+	LL = ll;
+	LR = lr;
+	UL = ul;
+	UR = ur;
+	dx = x;
+	dy = y;
+	recursionDepth = depth;
+	raytracer = RayTracer(lights, primitives, depth);
+	sampler = Sampler(dx, dy, samples);
+	camera = Camera(eye, ll, lr, ul, ur, x, y, 1.0, FLT_MAX);
+	film = Film(dx, dy, samples);
+	numSamples = samples;
 }
 
 

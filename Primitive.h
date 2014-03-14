@@ -27,9 +27,9 @@ public:
 };
 
 class GeometricPrimitive : public Primitive{
-	GeometricPrimitive(){}
 public:
 	Transformation objToWorld, worldToObj;
+	GeometricPrimitive(){}
 	GeometricPrimitive(Shape* s);
 	GeometricPrimitive(Shape* s, Transformation otw, Transformation wto);
 	bool intersect(Ray ray, float* thit, Intersection* in);

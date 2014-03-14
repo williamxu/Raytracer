@@ -34,17 +34,23 @@ class Sampler{
 public:
 	int dx, dy; //dimension of our output
 	int curr_x = 0, curr_y = 0;
+	int distribution = 1;
+	int counter = 0;
 	Sampler();
 	Sampler(int x, int y);
+	Sampler(int x, int y, int aliasing);
 	bool generateSample(Sample* sample);
 };
 
 class Film {
 public:
 	FIBITMAP* bitmap;
+	int samplesPerPixel = 1;
 	int dx, dy;
+	Color* colors;
 	Film();
 	Film(int x, int y);
+	Film(int x, int y, int spp);
 	void commit(Sample& sample, Color& c);
 	void writeImage(char* filename);
 };
@@ -83,7 +89,8 @@ public:
 	Vector3f eye;
 	Vector3f LL, LR, UL, UR;
 	float dx, dy;
-	int recursionDepth;
+	int recursionDepth=0;
+	int numSamples=1;
 	Sampler sampler = Sampler();
 	Camera camera = Camera();
 	RayTracer raytracer = RayTracer();
@@ -91,6 +98,7 @@ public:
 
 	Scene();
 	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth);
+	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth, int samples);
 	void addLight(Light light);
 	void addPrimitive(Primitive* p);
 	void render(char* filename);
