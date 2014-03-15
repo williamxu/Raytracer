@@ -20,7 +20,6 @@ GeometricPrimitive::GeometricPrimitive(Shape* s, Transformation otw, Transformat
 }
 
 bool GeometricPrimitive::intersect(Ray ray, float* thit, Intersection* in)  {
-	//Ray oray = ray;
 	Ray oray = worldToObj * ray; //the new ray is taking the inverse of objToWorld
 	shape->transform(worldToObj);
 	LocalGeo olocal = LocalGeo();
@@ -31,14 +30,17 @@ bool GeometricPrimitive::intersect(Ray ray, float* thit, Intersection* in)  {
 	shape->transform(objToWorld);
 	in->primitive = this;
 	in->localGeo = objToWorld * olocal;
-	//in->localGeo = olocal;
+	//in->localGeo = worldToObj * olocal;
 	return true;
 }
 
 bool GeometricPrimitive::intersectP(Ray ray)  {
 	//Ray oray = ray;
 	Ray oray = worldToObj * ray;
-	return shape->intersectP(oray);
+	shape->transform(worldToObj);
+	bool t =  shape->intersectP(oray);
+	shape->transform(objToWorld);
+	return t;
 }
 void GeometricPrimitive::getBRDF(LocalGeo local, BRDF* brdf) {
 	*brdf = shape->brdf;

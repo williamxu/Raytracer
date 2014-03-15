@@ -174,7 +174,8 @@ void aMatrix::createEulerRotation(float x, float y, float z){
 	Rz.m[1][0] = sin(z);
 	Rz.m[1][1] = cos(z);
 	
-	aMatrix t = (Rx * Ry) * Rz;
+	aMatrix t = Rx * Ry;
+	t = t * Rz;
 	for (int i = 0; i < 4; i++){
 		for (int j = 0; j < 4; j++){
 			m[i][j] = t.m[i][j];
@@ -261,7 +262,7 @@ Normal Transformation::operator*(Normal n){
 	nMat.m[2][1] = a.m[0][1] * a.m[2][0] - a.m[0][0] * a.m[2][1];
 	nMat.m[2][2] = a.m[0][0] * a.m[1][1] - a.m[0][1] * a.m[1][0];
 
-	Vector3f result = Transformation(nMat) * n.xyz;
+	Vector3f result = Transformation(nMat).mulDirection(n.xyz);
 	return Normal(result);
 }
 
