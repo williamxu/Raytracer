@@ -1,57 +1,5 @@
 
-////
-////void reflection_test(){
-////
-////
-////	//camera and image plane
-////	Vector3f eye = Vector3f();
-////	Vector3f ul = Vector3f(-1, 1, -3);
-////	Vector3f ur = Vector3f(1, 1, -3);
-////	Vector3f lr = Vector3f(1, -1, -3);
-////	Vector3f ll = Vector3f(-1, -1, -3);
-////
-////
-////
-////	//scene initializer
-////	Light l1 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027));
-////	Light l2 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(-0.57735027, 0.57735027, 0.57735027));
-////
-////	Sphere s1 = Sphere(
-////		Vector3f(0, 0, -17), 2,
-////		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
-////	GeometricPrimitive g1 = GeometricPrimitive(&s1);
-////
-////	Sphere s2 = Sphere(
-////		Vector3f(0, 4, -17), 1.5,
-////		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
-////	GeometricPrimitive g2 = GeometricPrimitive(&s2);
-////
-////	Sphere s3 = Sphere(
-////		Vector3f(0, -4, -17), 1.5,
-////		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 0, 1), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
-////	GeometricPrimitive g3 = GeometricPrimitive(&s3);
-////
-////	Sphere s4 = Sphere(
-////		Vector3f(4, 0, -17), 1.5,
-////		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
-////	GeometricPrimitive g4 = GeometricPrimitive(&s4);
-////
-////	Sphere s5 = Sphere(
-////		Vector3f(-4, 0, -17), 1.5,
-////		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
-////	GeometricPrimitive g5 = GeometricPrimitive(&s5);
-////
-////
-////	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4), (Primitive*)(&g5)};
-////	vector<Light> lights = vector<Light> {l1, l2};
-////
-////	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, lights, pr, 5);
-////
-////	filename = "reflection_five_spheres.bmp";
-////	//render call
-////	s.render(filename);
-////}
-////
+
 ////void transform_test(){
 ////
 ////	//camera and image plane

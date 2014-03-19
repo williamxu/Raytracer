@@ -1,4 +1,5 @@
 #include "Raytracer.h"
+#include <time.h>
 
 char* filename;
 vector<Primitive*> pr = vector<Primitive*>();
@@ -342,12 +343,12 @@ void shadowtest(){
 		new Sphere(Vector3f(-2, 2, -15), 1,
 		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 0), Vector3f(1, 1, 1), Vector3f(), 50)));
 	GeometricPrimitive g3 = GeometricPrimitive(
-		new Sphere(Vector3f(-2, -2, -15), 1, 
+		new Sphere(Vector3f(-2, -2, -15), 1,
 		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(), 50)));
 	GeometricPrimitive g4 = GeometricPrimitive(
-		new Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20), 
+		new Triangle(Vector3f(5, 5, -17), Vector3f(1, 4, -20), Vector3f(6, -1, -20),
 		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 1), Vector3f(1, 1, 1), 50)));
-	
+
 	pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4)};
 	s.addPrimitives(pr);
 
@@ -362,16 +363,66 @@ void shadowtest(){
 }
 
 
+void reflection_test(){
+
+	//initialization of scene
+	Vector3f eye = Vector3f(0, 0, 0);
+	Vector3f ul = Vector3f(-1, 1, -3);
+	Vector3f ur = Vector3f(1, 1, -3);
+	Vector3f lr = Vector3f(1, -1, -3);
+	Vector3f ll = Vector3f(-1, -1, -3);
+	Scene s = Scene(eye, ll, lr, ul, ur, 1000, 1000, 5);
+
+	//primitives
+	GeometricPrimitive g1 = GeometricPrimitive(
+		new Sphere(Vector3f(0, 0, -17), 2,
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50)));
+
+	GeometricPrimitive g2 = GeometricPrimitive(
+		new Sphere(Vector3f(0, 4, -17), 1.5,
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50)));
+
+	GeometricPrimitive g3 = GeometricPrimitive(
+		new Sphere(Vector3f(0, -4, -17), 1.5,
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 0, 1), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50)));
+	
+	GeometricPrimitive g4 = GeometricPrimitive(
+		new Sphere(Vector3f(4, 0, -17), 1.5,
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 1, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50)));
+	
+	GeometricPrimitive g5 = GeometricPrimitive(
+		new Sphere(Vector3f(-4, 0, -17), 1.5,
+		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(0, 1, 1), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50)));
+
+	vector<Primitive*> pr = vector<Primitive*> {(Primitive*)(&g1), (Primitive*)(&g2), (Primitive*)(&g3), (Primitive*)(&g4), (Primitive*)(&g5)};
+	s.addPrimitives(pr);
+
+	//lights
+	s.addLight(Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027)));
+	s.addLight(Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(-0.57735027, 0.57735027, 0.57735027)));
+
+	//render call
+	filename = "reflection_five_spheres.bmp";
+	s.render(filename);
+}
+
 
 int main(int argc, char *argv[]) {
 
-	//spheretest_yellow_shading();
-	//spheretest_with_two_lights();
+	srand(time(NULL));
+	clock_t start, end;
+	start = clock();
+	spheretest_yellow_shading();
+	spheretest_with_two_lights();
 	//spheretest_with_two_spheres();
 	shadowtest();
-	//reflection_test();
+	reflection_test();
 	//transform_test();
 	//string file(argv[1]);
 	//loadScene(file);
+
+	end = clock();
+	cout << "HBB: Time required for execution: " << (double)(end - start) / CLOCKS_PER_SEC << " seconds.";
+	cin.ignore();
 	return 0;
 }
