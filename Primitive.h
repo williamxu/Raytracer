@@ -28,10 +28,10 @@ public:
 
 class GeometricPrimitive : public Primitive{
 public:
-	Transformation objToWorld, worldToObj;
+	//Transformation objToWorld, worldToObj;
 	GeometricPrimitive(){}
 	GeometricPrimitive(Shape* s);
-	GeometricPrimitive(Shape* s, Transformation otw, Transformation wto);
+	//GeometricPrimitive(Shape* s, Transformation otw, Transformation wto);
 	bool intersect(Ray ray, float* thit, Intersection* in);
 	bool intersectP(Ray ray);
 	void getBRDF(LocalGeo local, BRDF* brdf);
@@ -41,11 +41,12 @@ class AggregatePrimitive : public Primitive{
 
 	vector<Primitive*> primitives;
 public:
-	AggregatePrimitive(){}
-	AggregatePrimitive(vector<Primitive*> list);
+	AggregatePrimitive(){
+		primitives = vector<Primitive*>();
+	}
+	AggregatePrimitive(vector<Primitive*> p){ primitives = p; }
 	bool intersect(Ray ray, float* thit, Intersection* in);
 	bool intersectP(Ray ray);
 	void getBRDF(LocalGeo local, BRDF* brdf);
-
 	void addPrimitive(Primitive* p);
 };

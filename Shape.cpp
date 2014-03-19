@@ -2,16 +2,13 @@
 
 
 Sphere::Sphere(){
-	center = Vector3f(0, 0, 0);
+	center = Vector3f();
 	radius = 1.0;
 }
 Sphere::Sphere(Vector3f c, float r, BRDF color){
 	brdf = color;
 	center = c;
 	radius = r;
-}
-void Sphere::transform(Transformation t){
-	center = t * center;
 }
 
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local) {
@@ -25,13 +22,13 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local) {
 		if (t >= ray.t_min && t < ray.t_max){
 			*thit = t;
 			Vector3f p = ray.atTime(t);
-			*local = LocalGeo(p, Normal(p - c));
+			*local = LocalGeo(p, (p-c).normalized());
 			return true;
 		}
 		else if (t2 >= ray.t_min && t2 < ray.t_max){
 			*thit = t2;
 			Vector3f p = ray.atTime(t2);
-			*local = LocalGeo(p, Normal(p - c));
+			*local = LocalGeo(p, (p-c).normalized());
 			return true;
 		}
 	}
@@ -55,7 +52,7 @@ bool Sphere::intersectP(Ray& ray) {
 }
 
 Triangle::Triangle(){
-	p1 = Vector3f(0, 0, 0);
+	p1 = Vector3f();
 	p2 = Vector3f(1, 0, 0);
 	p3 = Vector3f(0, 1, 0);
 }
@@ -65,11 +62,7 @@ Triangle::Triangle(Vector3f P1, Vector3f P2, Vector3f P3, BRDF color){
 	p3 = P3;
 	brdf = color;
 }
-void Triangle::transform(Transformation t){
-	p1 = t * p1;
-	p2 = t * p2;
-	p3 = t * p3;
-}
+
 bool Triangle::intersectP(Ray& ray){
 	float a = p1.x() - p2.x();
 	float b = p1.y() - p2.y();
@@ -123,7 +116,7 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 		*thit = t;
 		Vector3f p = ray.atTime(t);
 		Vector3f norm = (p2 - p1).cross(p3 - p1);
-		*local = LocalGeo(p, Normal(norm));
+		*local = LocalGeo(p, norm.normalized());
 		return true;
 	}
 	return false;

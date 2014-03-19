@@ -20,7 +20,9 @@
 #include "FreeImage/FreeImage.h"
 
 using namespace Eigen;
-//global
+
+vector<Light> lights;
+AggregatePrimitive primitives;
 
 class Sample{
 public:
@@ -47,7 +49,7 @@ public:
 	FIBITMAP* bitmap;
 	int samplesPerPixel = 1;
 	int dx, dy;
-	Color* colors;
+	vector<Color> sum;
 	Film();
 	Film(int x, int y);
 	Film(int x, int y, int spp);
@@ -71,14 +73,10 @@ public:
 };
 
 class RayTracer{
-	vector<Light> lights;
-	AggregatePrimitive primitives;
-	int recursionDepth;
+	int recursionDepth = 0;
 public:
-	RayTracer();
-	RayTracer(vector<Light> l, vector<Primitive*> p, int depth);
-	void addLight(Light l);
-	void addPrimitive(Primitive* p);
+	RayTracer(){}
+	RayTracer(int depth);
 	bool shadow(Ray ray);
 	void trace(Ray ray, int depth, Color* color);
 	Ray createReflectRay(LocalGeo lg, Ray ray);
@@ -86,9 +84,6 @@ public:
 
 class Scene{
 public:
-	Vector3f eye;
-	Vector3f LL, LR, UL, UR;
-	float dx, dy;
 	int recursionDepth=0;
 	int numSamples=1;
 	Sampler sampler = Sampler();
@@ -97,9 +92,9 @@ public:
 	Film film = Film();
 
 	Scene();
-	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth);
-	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, vector<Light> lights, vector<Primitive*> primitives, int depth, int samples);
-	void addLight(Light light);
-	void addPrimitive(Primitive* p);
+	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth);
+	Scene(Vector3f e, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, float x, float y, int depth, int samples);
 	void render(char* filename);
+	void addPrimitives(vector<Primitive*> p);
+	void addLight(Light l);
 };

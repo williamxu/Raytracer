@@ -10,44 +10,42 @@ Intersection::Intersection(LocalGeo l, Primitive* p){
 
 GeometricPrimitive::GeometricPrimitive(Shape* s){
 	shape = s;
-	worldToObj = Transformation();
-	objToWorld = Transformation();
+	//worldToObj = Transformation();
+	//objToWorld = Transformation();
 }
-GeometricPrimitive::GeometricPrimitive(Shape* s, Transformation otw, Transformation wto){
-	shape = s;
-	objToWorld = otw;
-	worldToObj = wto;
-}
+//GeometricPrimitive::GeometricPrimitive(Shape* s, Transformation otw, Transformation wto){
+//	shape = s;
+//	objToWorld = otw;
+//	worldToObj = wto;
+//}
 
 bool GeometricPrimitive::intersect(Ray ray, float* thit, Intersection* in)  {
-	Ray oray = worldToObj * ray; //the new ray is taking the inverse of objToWorld
-	shape->transform(worldToObj);
+	//Ray oray = worldToObj * ray; //the new ray is taking the inverse of objToWorld
+	Ray oray = ray;
+	//shape->transform(worldToObj);
 	LocalGeo olocal = LocalGeo();
 	if (!shape->intersect(oray, thit, &olocal)){
-		shape->transform(objToWorld);
+		//shape->transform(objToWorld);
 		return false;
 	}
-	shape->transform(objToWorld);
+	//shape->transform(objToWorld);
 	in->primitive = this;
-	in->localGeo = objToWorld * olocal;
+	in->localGeo = olocal;
+	//in->localGeo = objToWorld * olocal;
 	//in->localGeo = worldToObj * olocal;
 	return true;
 }
 
 bool GeometricPrimitive::intersectP(Ray ray)  {
-	//Ray oray = ray;
-	Ray oray = worldToObj * ray;
-	shape->transform(worldToObj);
+	Ray oray = ray;
+	//Ray oray = worldToObj * ray;
+	//shape->transform(worldToObj);
 	bool t =  shape->intersectP(oray);
-	shape->transform(objToWorld);
+	//shape->transform(objToWorld);
 	return t;
 }
 void GeometricPrimitive::getBRDF(LocalGeo local, BRDF* brdf) {
 	*brdf = shape->brdf;
-}
-
-AggregatePrimitive::AggregatePrimitive(vector<Primitive*> list){
-	primitives = list;
 }
 
 bool AggregatePrimitive::intersect(Ray ray, float* thit, Intersection* in){

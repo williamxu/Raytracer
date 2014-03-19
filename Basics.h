@@ -20,28 +20,8 @@ enum LightType { POINTLIGHT, DIRECTIONALLIGHT };
 
 inline float sqr(float x) { return x*x; }
 
-class Normal {
-public:
-	Vector3f xyz;
-	Normal();
-	Normal(Vector3f vector);
-};
-
-//Matrix
-//Notes :
-//Support creation of rotation, translation, scaling matrices
-//May support matrix inversion if needed
-//Also could support SVD, or other matrix decomposition, for future extension
-class aMatrix {
-public:
-	float m[4][4];
-	aMatrix();
-	aMatrix operator*(aMatrix other);
-	void createEulerRotation(float x, float y, float z);
-	void createQuaternionRotation(Vector3f complex, float real); //using quaternion matrix
-	void createTranslation(float x, float y, float z);
-	void createScale(float x, float y, float z);
-};
+typedef Vector3f Normal;
+typedef Vector3f Color;
 
 class Ray{
 public:
@@ -61,17 +41,6 @@ public:
 	LocalGeo(Vector3f p, Normal n);
 };
 
-class Color {
-public:
-	Vector3f rgb;
-	Color();
-	Color(Vector3f values);
-	Color operator+(Color c);
-	Color operator*(Color c);
-	Color operator*(float f);
-};
-
-
 class Light{
 public:
 	Color color;
@@ -88,7 +57,7 @@ public:
 	Color ka;
 	Color kd;
 	Color ks;
-	Color kr; //reflection coefficient
+	Color kr;
 	float sp;
 	BRDF();
 	BRDF(Vector3f ambient, Vector3f diffuse, Vector3f specular, Vector3f reflection, float spec);
@@ -98,15 +67,15 @@ public:
 	float specularCoefficient();
 };
 
-class Transformation{
-public:
-	aMatrix trans;
-	Transformation();
-	Transformation(aMatrix mat);
-	Transformation operator* (Transformation t);
-	Normal operator*(Normal n);
-	Ray operator*(Ray r);
-	LocalGeo operator*(LocalGeo lg);
-	Vector3f operator*(Vector3f v);
-	Vector3f mulDirection(Vector3f d);
-};
+//class Transformation{
+//public:
+//	aMatrix trans;
+//	Transformation();
+//	Transformation(aMatrix mat);
+//	Transformation operator* (Transformation t);
+//	Normal operator*(Normal n);
+//	Ray operator*(Ray r);
+//	LocalGeo operator*(LocalGeo lg);
+//	Vector3f operator*(Vector3f v);
+//	Vector3f mulDirection(Vector3f d);
+//};
