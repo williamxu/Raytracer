@@ -1,17 +1,7 @@
-#ifndef BASIC
-#define BASIC
+#pragma once
 #include "Basics.h"
-#endif
-
-#ifndef SHAPE
-#define SHAPE
 #include "Shape.h"
-#endif
-
-#ifndef PRIMITIVE
-#define PRIMITIVE
 #include "Primitive.h"
-#endif
 
 #ifdef _WIN32
 #include <windows.h>

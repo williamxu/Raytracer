@@ -1,7 +1,5 @@
-#ifndef BASIC
-#define BASIC
+#pragma once
 #include "Basics.h"
-#endif
 
 class Shape{
 public:

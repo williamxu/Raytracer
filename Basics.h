@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -9,7 +11,7 @@
 #endif
 
 #include <Dense>
-#include <LU>
+#include <Geometry>
 
 using namespace Eigen;
 using namespace std;
@@ -67,15 +69,19 @@ public:
 	float specularCoefficient();
 };
 
-//class Transformation{
-//public:
-//	aMatrix trans;
-//	Transformation();
-//	Transformation(aMatrix mat);
-//	Transformation operator* (Transformation t);
-//	Normal operator*(Normal n);
-//	Ray operator*(Ray r);
-//	LocalGeo operator*(LocalGeo lg);
-//	Vector3f operator*(Vector3f v);
-//	Vector3f mulDirection(Vector3f d);
-//};
+class Transformation{
+	Matrix4f matrix = Matrix4f();
+public:
+	Transformation(){}
+	Transformation(Matrix4f m){ matrix = m; }
+	static Transformation axisAngleRotation(Vector3f axis, float angle);
+	//static Transformation quaternionRotation(Vector3f axis, float angle);
+	//static Transformation translation(Vector3f xyz);
+	//static Transformation scale(Vector3f xyz);
+	//Transformation operator* (Transformation t);
+	//Normal operator*(Normal n);
+	//Ray operator*(Ray r);
+	//LocalGeo operator*(LocalGeo lg);
+	//Vector3f operator*(Vector3f v);
+	//Vector3f mulDirection(Vector3f d);
+};

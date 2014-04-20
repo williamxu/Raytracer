@@ -1,12 +1,7 @@
-#ifndef SHAPE
-#define SHAPE
-#include "Shape.h"
-#endif
+#pragma once
 
-#ifndef BASIC
-#define BASIC
+#include "Shape.h"
 #include "Basics.h"
-#endif
 
 class Intersection;
 

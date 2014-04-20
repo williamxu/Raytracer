@@ -269,7 +269,6 @@ void spheretest_yellow_shading(){
 	filename = "spheretest_yellow_shading.bmp";
 	s.render(filename);
 }
-
 void spheretest_with_two_lights(){
 
 	//initialization of scene
@@ -295,7 +294,6 @@ void spheretest_with_two_lights(){
 	s.render(filename);
 
 }
-
 //void spheretest_with_two_spheres(){
 //
 //	//initialization of scene
@@ -324,7 +322,6 @@ void spheretest_with_two_lights(){
 //	filename = "spheretest_two_spheres.bmp";
 //	s.render(filename);
 //}
-
 void shadowtest(){
 
 	//initialization of scene
@@ -361,8 +358,6 @@ void shadowtest(){
 	s.render(filename);
 
 }
-
-
 void reflection_test(){
 
 	//initialization of scene
@@ -406,6 +401,46 @@ void reflection_test(){
 	s.render(filename);
 }
 
+//void transform_test(){
+//
+//	//camera and image plane
+//	Vector3f eye = Vector3f();
+//	Vector3f ul = Vector3f(-1, 1, -3);
+//	Vector3f ur = Vector3f(1, 1, -3);
+//	Vector3f lr = Vector3f(1, -1, -3);
+//	Vector3f ll = Vector3f(-1, -1, -3);
+//
+//	//scene initializer
+//	Light l1 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027));
+//	Light l2 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(-0.57735027, 0.57735027, 0.57735027));
+//
+//	Sphere s1 = Sphere(Vector3f(0, 0, -17), 2,
+//		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
+//	
+//	aMatrix trans = aMatrix();
+//	//trans.createTranslation(4,4,0);
+//	//trans.createScale(2, 2, 2);
+//	//trans.createEulerRotation(90, 0, 0);
+//
+//	aMatrix invtrans = aMatrix();
+//	//invtrans.createTranslation(-4,-4,0);
+//	//invtrans.createScale(0.5, 0.5, 0.5);
+//	//invtrans.createEulerRotation(-90, 0, 0);
+//	
+//	Transformation t = Transformation(trans);
+//	Transformation t2 = Transformation(invtrans);
+//	
+//	GeometricPrimitive g1 = GeometricPrimitive(&s1,t,t2);
+//	//GeometricPrimitive g1 = GeometricPrimitive(&s1);
+//
+//	vector<Light> lights = { l1, l2 };
+//	vector<Primitive*> primitives = { (Primitive*)&g1 };
+//
+//	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, lights, primitives, 0);
+//	filename = "ellipse1.bmp";
+//	//render call
+//	s.render(filename);
+//}
 
 int main(int argc, char *argv[]) {
 

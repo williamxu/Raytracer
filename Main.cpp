@@ -1,45 +1,6 @@
 
 
-////void transform_test(){
-////
-////	//camera and image plane
-////	Vector3f eye = Vector3f();
-////	Vector3f ul = Vector3f(-1, 1, -3);
-////	Vector3f ur = Vector3f(1, 1, -3);
-////	Vector3f lr = Vector3f(1, -1, -3);
-////	Vector3f ll = Vector3f(-1, -1, -3);
-////
-////	//scene initializer
-////	Light l1 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(0.57735027, -0.57735027, -0.57735027));
-////	Light l2 = Light(Color(Vector3f(1, 1, 1)), DIRECTIONALLIGHT, Vector3f(-0.57735027, 0.57735027, 0.57735027));
-////
-////	Sphere s1 = Sphere(Vector3f(0, 0, -17), 2,
-////		BRDF(Vector3f(0.1, 0.1, 0.1), Vector3f(1, 0, 0), Vector3f(1, 1, 1), Vector3f(0.9, 0.9, 0.9), 50));
-////	
-////	aMatrix trans = aMatrix();
-////	//trans.createTranslation(4,4,0);
-////	//trans.createScale(2, 2, 2);
-////	//trans.createEulerRotation(90, 0, 0);
-////
-////	aMatrix invtrans = aMatrix();
-////	//invtrans.createTranslation(-4,-4,0);
-////	//invtrans.createScale(0.5, 0.5, 0.5);
-////	//invtrans.createEulerRotation(-90, 0, 0);
-////	
-////	Transformation t = Transformation(trans);
-////	Transformation t2 = Transformation(invtrans);
-////	
-////	GeometricPrimitive g1 = GeometricPrimitive(&s1,t,t2);
-////	//GeometricPrimitive g1 = GeometricPrimitive(&s1);
-////
-////	vector<Light> lights = { l1, l2 };
-////	vector<Primitive*> primitives = { (Primitive*)&g1 };
-////
-////	Scene s = Scene(eye, ll, lr, ul, ur, 200, 200, lights, primitives, 0);
-////	filename = "ellipse1.bmp";
-////	//render call
-////	s.render(filename);
-////}
+
 ////
 ////void loadScene(string file){
 ////	ifstream input(file.c_str());
@@ -151,18 +112,3 @@
 ////	}
 ////
 ////}
-////
-//int main(int argc, char *argv[]) {
-//
-//	spheretest_yellow_shading();
-//	//spheretest_with_two_lights();
-//	//spheretest_with_two_spheres();
-//	//spheretest_viewing_angle1();
-//	//spheretest_viewing_angle2();
-//	//spheres_shadowtest();
-//	//reflection_test();
-//	//transform_test();
-//	//string file(argv[1]);
-//	//loadScene(file);
-//	return 0;
-//}
